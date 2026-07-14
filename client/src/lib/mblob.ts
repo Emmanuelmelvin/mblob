@@ -37,7 +37,10 @@ async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof impor
 
 export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, file: File) {
     const fileHash = await bytes32Hash(file)
-    const quote = await publicClient.readContract({ address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'quote', args: [BigInt(file.size), 24n, 3, false] })
+    const quote = await publicClient.readContract({
+        address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'quote', args: [BigInt(file.size), 24n, 3, false],
+        authorizationList: undefined
+    })
     const transactionHash = await walletClient.writeContract({ account: address, chain: monadTestnet, address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'createBlob', args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false], value: quote })
     const receipt = await publicClient.waitForTransactionReceipt({ hash: transactionHash })
     const event = parseEventLogs({ abi: registryAbi, logs: receipt.logs, eventName: 'BlobCreated' })[0]
