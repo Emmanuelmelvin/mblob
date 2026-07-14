@@ -41,24 +41,33 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
         address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'quote', args: [BigInt(file.size), 24n, 3, false],
         authorizationList: undefined
     })
-    const transactionHash = await walletClient.writeContract({ account: address, chain: monadTestnet, address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'createBlob', args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false], value: quote })
-    const receipt = await publicClient.waitForTransactionReceipt({ hash: transactionHash })
+    const createTxHash = await walletClient.writeContract({ account: address, chain: monadTestnet, address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'createBlob', args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false], value: quote })
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: createTxHash })
     const event = parseEventLogs({ abi: registryAbi, logs: receipt.logs, eventName: 'BlobCreated' })[0]
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
 
     const body = new FormData()
     body.set('file', file)
-    const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), '/upload', { method: 'POST', body })
+
+    const nonce = crypto.randomUUID()
+    const signature = await walletClient.signMessage({ account: address, message: authorizationMessage('upload', blobId.toString(), nonce) })
+    const headers = new Headers()
+    headers.set('x-mblob-address', address)
+    headers.set('x-mblob-signature', signature)
+    headers.set('x-mblob-nonce', nonce)
+    headers.set('x-create-tx-hash', createTxHash)
+
+    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body, headers })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
-    const uploaded = await response.json() as { publicId: string }
-    return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash }
+    const uploaded = await response.json() as { publicId: string; createTxHash: string | null; activateTxHash: string | null }
+    return { blobId: blobId.toString(), publicId: uploaded.publicId, createTxHash: createTxHash, activateTxHash: uploaded.activateTxHash }
 }
 
 export async function getBlob(blobId: string) {
     const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}`)
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
-    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; transactionHash: string | null }>
+    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; createTxHash: string | null; activateTxHash: string | null }>
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {

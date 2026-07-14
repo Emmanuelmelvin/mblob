@@ -1,12 +1,13 @@
 import React from 'react'
 import { Link, useRoute } from 'wouter'
-import { UploadIcon, DownloadIcon, HomeIcon } from '@radix-ui/react-icons'
+import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon } from '@radix-ui/react-icons'
 import { useWallet } from '../lib/wallet'
 
 const navItems = [
     { href: '/', label: 'Home', icon: HomeIcon },
     { href: '/upload', label: 'Upload', icon: UploadIcon },
     { href: '/retrieve', label: 'Retrieve', icon: DownloadIcon },
+    { href: '/docs', label: 'Docs', icon: ReaderIcon },
 ] as const
 
 export function Layout({ children }: { children: React.ReactNode }) {

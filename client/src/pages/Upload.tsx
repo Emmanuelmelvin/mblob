@@ -12,7 +12,8 @@ export function Upload() {
     const [step, setStep] = useState<UploadStep>('select')
     const [blobId, setBlobId] = useState<string | null>(null)
     const [publicId, setPublicId] = useState<string | null>(null)
-    const [transactionHash, setTransactionHash] = useState<string | null>(null)
+    const [createTxHash, setCreateTxHash] = useState<string | null>(null)
+    const [activateTxHash, setActivateTxHash] = useState<string | null>(null)
     const [error, setError] = useState<string | null>(null)
     const inputRef = useRef<HTMLInputElement>(null)
     const { address, connect, walletClient } = useWallet()
@@ -36,7 +37,8 @@ export function Upload() {
             setStep('uploading')
             setBlobId(result.blobId)
             setPublicId(result.publicId)
-            setTransactionHash(result.transactionHash)
+            setCreateTxHash(result.createTxHash)
+            setActivateTxHash(result.activateTxHash)
             setStep('done')
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Upload failed')
@@ -60,7 +62,7 @@ export function Upload() {
 
         {step === 'paying' && <Status message="Confirm the payment in your wallet, then wait for Monad to confirm the transaction." />}
         {step === 'uploading' && <Status message="Sign the upload authorization in your wallet. The gateway is encrypting and replicating your file." />}
-        {step === 'done' && blobId && <div className="border border-black p-6 space-y-4"><div className="flex items-center gap-3"><CheckIcon className="w-5 h-5" /><p className="text-sm font-medium">Blob uploaded and activated</p></div><div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">BLOB ID — save this value</p><Copiable value={publicId!} /></div>{transactionHash && <div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">TRANSACTION HASH</p><TransactionHash value={transactionHash} /></div>}<button onClick={() => { setFile(null); setBlobId(null); setPublicId(null); setTransactionHash(null); setStep('select') }} className="w-full px-4 py-3 border border-black text-sm font-medium hover:bg-neutral-100">Upload another file</button></div>}
+        {step === 'done' && blobId && <div className="border border-black p-6 space-y-4"><div className="flex items-center gap-3"><CheckIcon className="w-5 h-5" /><p className="text-sm font-medium">Blob uploaded and activated</p></div><div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">BLOB ID — save this value</p><Copiable value={publicId!} /></div>{createTxHash && <div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">CREATE TX HASH (user-signed)</p><TransactionHash value={createTxHash} /></div>}{activateTxHash && <div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">ACTIVATE TX HASH (server-signed)</p><TransactionHash value={activateTxHash} /></div>}<button onClick={() => { setFile(null); setBlobId(null); setPublicId(null); setCreateTxHash(null); setActivateTxHash(null); setStep('select') }} className="w-full px-4 py-3 border border-black text-sm font-medium hover:bg-neutral-100">Upload another file</button></div>}
         {step === 'error' && <div className="border border-red-800 p-6 bg-red-50"><p className="text-sm font-medium text-red-800">Upload failed</p><p className="mt-1 text-xs text-red-700">{error}</p><button onClick={() => setStep('select')} className="mt-4 px-4 py-2 border border-red-800 text-sm text-red-800">Try again</button></div>}
     </div>
 }

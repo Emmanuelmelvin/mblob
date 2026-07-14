@@ -6,6 +6,7 @@ const envSchema = z.object({
   PORT: z.coerce.number().int().positive().default(3000),
   DATABASE_URL: z.string().url(),
   MONAD_RPC_URL: z.string().url(),
+  MONAD_EXPLORER_URL: z.string().url().default('https://testnet.monadexplorer.com'),
   MBLOB_REGISTRY_ADDRESS: z.string().regex(/^0x[a-fA-F0-9]{40}$/),
   GATEWAY_PRIVATE_KEY: z.string().regex(/^0x[a-fA-F0-9]{64}$/),
   DATA_ENCRYPTION_KEY: z.string().min(1),
