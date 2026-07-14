@@ -76,12 +76,12 @@ function Copiable({ value }: { value: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
     }
-    return <div className="flex items-start gap-2"><div className="flex-1 min-w-0 overflow-x-auto whitespace-nowrap text-sm font-mono scrollbar-hide">{value}</div><button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
+    return <div className="flex items-start gap-2"><div className="flex-1 min-w-0 truncate text-sm font-mono">{value}</div><button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
 }
 
 function TransactionHash({ value }: { value: string }) {
     const explorerUrl = `${CONTRACT.EXPLORER_URL}/tx/${value}`
-    return <div className="flex items-start gap-2"><div className="flex-1 min-w-0 overflow-x-auto whitespace-nowrap text-sm font-mono scrollbar-hide">{value}</div><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><CopiableButton value={value} /></div>
+    return <div className="flex items-start gap-2"><div className="flex-1 min-w-0 truncate text-sm font-mono">{value}</div><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><CopiableButton value={value} /></div>
 }
 
 function CopiableButton({ value }: { value: string }) {
