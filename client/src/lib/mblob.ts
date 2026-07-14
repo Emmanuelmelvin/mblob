@@ -55,10 +55,10 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash }
 }
 
-export async function getBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
-    const response = await authorizedFetch(walletClient, address, 'download', blobId, '')
+export async function getBlob(blobId: string) {
+    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}`)
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
-    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean }>
+    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; transactionHash: string | null }>
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {

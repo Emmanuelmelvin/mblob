@@ -4,7 +4,7 @@ import { cors } from 'hono/cors'
 import pino from 'pino'
 import { randomUUID } from 'node:crypto'
 
-import { assertBlobOwner, activateBlob } from './chain.js'
+import { assertBlobOwner, activateBlob, getChainBlob } from './chain.js'
 import { config } from './config.js'
 import { decryptFromStorage, encryptForStorage, sha256Hex } from './crypto.js'
 import { getStoredBlob, getStoredBlobByPublicId, initializeDatabase, saveBlob } from './database.js'
@@ -66,7 +66,8 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
       wrappedDataKey: encrypted.wrappedDataKey,
       contentType: file.type || 'application/octet-stream',
       contentLength: plaintext.length,
-      nodeUrls: replicated.nodeUrls
+      nodeUrls: replicated.nodeUrls,
+      transactionHash
     })
 
     logger.info({ blobId, publicId, transactionHash, replicas: replicated.nodeUrls.length }, 'Blob uploaded and activated')
@@ -79,13 +80,11 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
 
 app.get('/v1/blobs/:blobId', async (c) => {
   const blobReference = c.req.param('blobId')
-  let stage = 'authenticate request'
+  let stage = 'resolve blob ID'
   try {
-    const owner = await verifyRequestSignature(c.req.raw.headers, 'download', blobReference)
-    stage = 'resolve blob ID'
     const blobId = await resolveBlobReference(blobReference)
-    stage = 'verify on-chain ownership'
-    const blob = await assertBlobOwner(BigInt(blobId), owner)
+    stage = 'read on-chain blob'
+    const blob = await getChainBlob(BigInt(blobId))
     stage = 'read stored metadata'
     const stored = await getStoredBlob(blobId)
     return c.json({
@@ -94,7 +93,8 @@ app.get('/v1/blobs/:blobId', async (c) => {
       owner: blob.owner,
       status: blob.status,
       fileHash: blob.fileHash,
-      stored: Boolean(stored)
+      stored: Boolean(stored),
+      transactionHash: stored?.transactionHash ?? null
     })
   } catch (error) {
     logger.warn({ ...errorContext(error), blobReference, stage }, 'Blob lookup failed')
