@@ -54,7 +54,7 @@ services:
     command: node dist/storage-node.js
     env_file: ./server/.env
     environment:
-      STORAGE_NODE_PORT: 4001
+      STORAGE_NODE_PORT: 4002
       STORAGE_DATA_DIR: /data
     volumes:
       - storage-node-2-data:/data
@@ -64,7 +64,7 @@ services:
     command: node dist/storage-node.js
     env_file: ./server/.env
     environment:
-      STORAGE_NODE_PORT: 4001
+      STORAGE_NODE_PORT: 4003
       STORAGE_DATA_DIR: /data
     volumes:
       - storage-node-3-data:/data
