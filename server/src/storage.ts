@@ -14,7 +14,10 @@ export async function replicate(blobId: string, ciphertext: Buffer) {
         headers: { ...headers(), 'content-type': 'application/octet-stream' },
         body: new Uint8Array(ciphertext)
       })
-      if (!response.ok) throw new Error(`Storage node ${nodeUrl} returned ${response.status}`)
+      if (!response.ok) {
+        const detail = (await response.text()).trim()
+        throw new Error(`Storage node ${nodeUrl} returned ${response.status}${detail ? `: ${detail}` : ''}`)
+      }
       return nodeUrl
     })
   )

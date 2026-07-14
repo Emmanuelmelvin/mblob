@@ -2,16 +2,29 @@ import { serve } from '@hono/node-server'
 import { Hono } from 'hono'
 import { cors } from 'hono/cors'
 import pino from 'pino'
+import { randomUUID } from 'node:crypto'
 
 import { assertBlobOwner, activateBlob } from './chain.js'
 import { config } from './config.js'
 import { decryptFromStorage, encryptForStorage, sha256Hex } from './crypto.js'
-import { getStoredBlob, initializeDatabase, saveBlob } from './database.js'
+import { getStoredBlob, getStoredBlobByPublicId, initializeDatabase, saveBlob } from './database.js'
 import { verifyRequestSignature } from './auth.js'
 import { replicate, retrieve } from './storage.js'
 
 const logger = pino({ level: process.env.LOG_LEVEL ?? 'info' })
 const app = new Hono()
+
+function errorContext(error: unknown) {
+  if (error instanceof Error) return { err: error, errorName: error.name, errorMessage: error.message, errorStack: error.stack }
+  return { errorMessage: String(error), errorValue: error }
+}
+
+async function resolveBlobReference(reference: string) {
+  if (/^\d+$/.test(reference)) return reference
+  const stored = await getStoredBlobByPublicId(reference)
+  if (!stored) throw new Error('Blob ID was not found')
+  return stored.blobId
+}
 
 app.use('/v1/*', cors())
 
@@ -19,25 +32,35 @@ app.get('/health', (c) => c.json({ ok: true, service: 'mblob-gateway' }))
 
 app.post('/v1/blobs/:blobId/upload', async (c) => {
   const blobId = c.req.param('blobId')
+  let stage = 'authenticate request'
   try {
     const owner = await verifyRequestSignature(c.req.raw.headers, 'upload', blobId)
+    stage = 'verify on-chain ownership'
     const chainBlob = await assertBlobOwner(BigInt(blobId), owner, 0)
+    stage = 'parse uploaded file'
     const form = await c.req.parseBody()
     const file = form.file
     if (!(file instanceof File)) return c.json({ error: 'Attach the file as multipart field "file"' }, 400)
     if (file.size === 0 || file.size > config.MAX_UPLOAD_BYTES) return c.json({ error: 'Invalid file size' }, 400)
 
     const plaintext = Buffer.from(await file.arrayBuffer())
+    stage = 'verify file hash'
     const fileHash = sha256Hex(plaintext)
     if (fileHash.toLowerCase() !== chainBlob.fileHash.toLowerCase()) {
       return c.json({ error: 'File hash does not match the on-chain blob record' }, 400)
     }
 
+    stage = 'encrypt file'
     const encrypted = encryptForStorage(plaintext, config.encryptionKey)
+    stage = 'replicate encrypted file'
     const replicated = await replicate(blobId, encrypted.ciphertext)
+    stage = 'activate blob on-chain'
     const transactionHash = await activateBlob(BigInt(blobId), replicated.commitment)
+    stage = 'save blob metadata'
+    const publicId = `mb1_${randomUUID().replaceAll('-', '')}`
     await saveBlob({
       blobId,
+      publicId,
       owner,
       fileHash,
       wrappedDataKey: encrypted.wrappedDataKey,
@@ -46,40 +69,55 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
       nodeUrls: replicated.nodeUrls
     })
 
-    logger.info({ blobId, transactionHash }, 'Blob uploaded and activated')
-    return c.json({ blobId, status: 'active', transactionHash, replicas: replicated.nodeUrls.length }, 201)
+    logger.info({ blobId, publicId, transactionHash, replicas: replicated.nodeUrls.length }, 'Blob uploaded and activated')
+    return c.json({ blobId, publicId, status: 'active', transactionHash, replicas: replicated.nodeUrls.length }, 201)
   } catch (error) {
-    logger.warn({ error, blobId }, 'Upload failed')
+    logger.warn({ ...errorContext(error), blobId, stage }, 'Upload failed')
     return c.json({ error: error instanceof Error ? error.message : 'Upload failed' }, 400)
   }
 })
 
 app.get('/v1/blobs/:blobId', async (c) => {
-  const blobId = c.req.param('blobId')
+  const blobReference = c.req.param('blobId')
+  let stage = 'authenticate request'
   try {
-    const owner = await verifyRequestSignature(c.req.raw.headers, 'download', blobId)
+    const owner = await verifyRequestSignature(c.req.raw.headers, 'download', blobReference)
+    stage = 'resolve blob ID'
+    const blobId = await resolveBlobReference(blobReference)
+    stage = 'verify on-chain ownership'
     const blob = await assertBlobOwner(BigInt(blobId), owner)
+    stage = 'read stored metadata'
+    const stored = await getStoredBlob(blobId)
     return c.json({
       blobId,
+      publicId: stored?.publicId ?? null,
       owner: blob.owner,
       status: blob.status,
       fileHash: blob.fileHash,
-      stored: Boolean(await getStoredBlob(blobId))
+      stored: Boolean(stored)
     })
   } catch (error) {
+    logger.warn({ ...errorContext(error), blobReference, stage }, 'Blob lookup failed')
     return c.json({ error: error instanceof Error ? error.message : 'Unable to read blob' }, 400)
   }
 })
 
 app.get('/v1/blobs/:blobId/download', async (c) => {
-  const blobId = c.req.param('blobId')
+  const blobReference = c.req.param('blobId')
+  let stage = 'authenticate request'
   try {
-    const owner = await verifyRequestSignature(c.req.raw.headers, 'download', blobId)
+    const owner = await verifyRequestSignature(c.req.raw.headers, 'download', blobReference)
+    stage = 'resolve blob ID'
+    const blobId = await resolveBlobReference(blobReference)
+    stage = 'verify on-chain ownership'
     await assertBlobOwner(BigInt(blobId), owner, 1)
+    stage = 'read stored metadata'
     const stored = await getStoredBlob(blobId)
     if (!stored) return c.json({ error: 'Blob has not been uploaded to storage' }, 404)
 
+    stage = 'retrieve encrypted replica'
     const ciphertext = await retrieve(blobId, stored.nodeUrls)
+    stage = 'decrypt file'
     const plaintext = decryptFromStorage(ciphertext, stored.wrappedDataKey, config.encryptionKey)
     if (sha256Hex(plaintext).toLowerCase() !== stored.fileHash.toLowerCase()) {
       throw new Error('Retrieved file integrity check failed')
@@ -90,6 +128,7 @@ app.get('/v1/blobs/:blobId/download', async (c) => {
     const body = plaintext.buffer.slice(plaintext.byteOffset, plaintext.byteOffset + plaintext.byteLength) as ArrayBuffer
     return new Response(body, { headers: c.res.headers })
   } catch (error) {
+    logger.warn({ ...errorContext(error), blobReference, stage }, 'Blob download failed')
     return c.json({ error: error instanceof Error ? error.message : 'Unable to download blob' }, 400)
   }
 })
