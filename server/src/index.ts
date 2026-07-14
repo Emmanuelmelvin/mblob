@@ -35,7 +35,6 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
   let stage = 'authenticate request'
   try {
     const owner = await verifyRequestSignature(c.req.raw.headers, 'upload', blobId)
-    const createTxHash = c.req.header('x-create-tx-hash') ?? null
     stage = 'verify on-chain ownership'
     const chainBlob = await assertBlobOwner(BigInt(blobId), owner, 0)
     stage = 'parse uploaded file'
@@ -56,7 +55,7 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
     stage = 'replicate encrypted file'
     const replicated = await replicate(blobId, encrypted.ciphertext)
     stage = 'activate blob on-chain'
-    const activateTxHash = await activateBlob(BigInt(blobId), replicated.commitment)
+    const transactionHash = await activateBlob(BigInt(blobId), replicated.commitment)
     stage = 'save blob metadata'
     const publicId = `mb1_${randomUUID().replaceAll('-', '')}`
     await saveBlob({
@@ -68,12 +67,11 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
       contentType: file.type || 'application/octet-stream',
       contentLength: plaintext.length,
       nodeUrls: replicated.nodeUrls,
-      createTxHash,
-      activateTxHash
+      transactionHash
     })
 
-    logger.info({ blobId, publicId, activateTxHash, replicas: replicated.nodeUrls.length }, 'Blob uploaded and activated')
-    return c.json({ blobId, publicId, status: 'active', createTxHash, activateTxHash, replicas: replicated.nodeUrls.length }, 201)
+    logger.info({ blobId, publicId, transactionHash, replicas: replicated.nodeUrls.length }, 'Blob uploaded and activated')
+    return c.json({ blobId, publicId, status: 'active', transactionHash, replicas: replicated.nodeUrls.length }, 201)
   } catch (error) {
     logger.warn({ ...errorContext(error), blobId, stage }, 'Upload failed')
     return c.json({ error: error instanceof Error ? error.message : 'Upload failed' }, 400)
@@ -96,8 +94,7 @@ app.get('/v1/blobs/:blobId', async (c) => {
       status: blob.status,
       fileHash: blob.fileHash,
       stored: Boolean(stored),
-      createTxHash: stored?.createTxHash ?? null,
-      activateTxHash: stored?.activateTxHash ?? null
+      transactionHash: stored?.transactionHash ?? null
     })
   } catch (error) {
     logger.warn({ ...errorContext(error), blobReference, stage }, 'Blob lookup failed')

@@ -60,14 +60,14 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
 
     const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body, headers })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
-    const uploaded = await response.json() as { publicId: string; createTxHash: string | null; activateTxHash: string | null }
-    return { blobId: blobId.toString(), publicId: uploaded.publicId, createTxHash: createTxHash, activateTxHash: uploaded.activateTxHash }
+    const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
+    return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
 }
 
 export async function getBlob(blobId: string) {
     const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}`)
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
-    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; createTxHash: string | null; activateTxHash: string | null }>
+    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; transactionHash: string | null }>
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
