@@ -17,15 +17,14 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
     return (
         <div className="min-h-screen bg-white text-black flex flex-col">
-            {/* Header */}
             <header className="border-b border-black">
                 <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 no-underline text-black shrink-0" aria-label="Mblob home">
+                    <Link href="/" className="flex items-center gap-2 no-underline text-black" aria-label="Mblob home">
                         <img src="/mblob.png" alt="Mblob" className="h-9 w-9 rounded-lg object-cover" />
                         <span className="text-lg font-semibold tracking-tight">mblob</span>
                     </Link>
 
-                    {/* Desktop nav */}
+                    {/* Desktop */}
                     <div className="hidden md:flex items-center gap-8">
                         {navItems.map((item) => {
                             const [isActive] = useRoute(item.href)
@@ -52,13 +51,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         )}
                     </div>
 
-                    {/* Mobile hamburger */}
-                    <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" className="md:hidden border border-black p-2 leading-none">
-                        {menuOpen ? (
-                            <svg width="16" height="16" viewBox="0 0 15 15" fill="currentColor"><path d="M11.78 4.78a.5.5 0 0 0-.7-.7L7.5 7.79 4.22 4.52a.5.5 0 0 0-.7.7l3.27 3.27-3.27 3.27a.5.5 0 0 0 .7.7l3.27-3.27 3.27 3.27a.5.5 0 0 0 .7-.7L8.21 8.24l3.27-3.27Z" fillRule="evenodd" clipRule="evenodd" /></svg>
-                        ) : (
-                            <svg width="16" height="16" viewBox="0 0 15 15" fill="currentColor"><path d="M2 3.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5Zm0 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5Zm0 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5Z" fillRule="evenodd" clipRule="evenodd" /></svg>
-                        )}
+                    {/* Mobile hamburger - using text characters instead of SVG icons */}
+                    <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" className="md:hidden border border-black w-9 h-9 flex items-center justify-center text-sm select-none">
+                        {menuOpen ? '\u2715' : '\u2630'}
                     </button>
                 </div>
 
@@ -95,12 +90,10 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 )}
             </header>
 
-            {/* Main */}
             <main className="flex-1 max-w-5xl mx-auto px-6 py-12 w-full">
                 {children}
             </main>
 
-            {/* Footer */}
             <footer className="border-t border-black">
                 <div className="max-w-5xl mx-auto px-6 h-14 flex items-center justify-between text-xs text-neutral-400">
                     <span>Mblob &mdash; Decentralized Blob Storage on Monad</span>
