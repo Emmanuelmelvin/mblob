@@ -37,7 +37,7 @@ export function Retrieve() {
 }
 
 function Info({ label, value, isTransactionHash }: { label: string; value: string; isTransactionHash?: boolean }) {
-    return <div className="p-4"><p className="text-xs font-mono text-neutral-400 mb-1">{label}</p>{isTransactionHash ? <TransactionHash value={value} /> : <Copiable value={value} />}</div>
+    return <div className="p-4 min-w-0"><p className="text-xs font-mono text-neutral-400 mb-1">{label}</p>{isTransactionHash ? <TransactionHash value={value} /> : <Copiable value={value} />}</div>
 }
 
 function Copiable({ value }: { value: string }) {
@@ -47,12 +47,12 @@ function Copiable({ value }: { value: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
     }
-    return <div className="flex items-start gap-2"><p className="text-sm font-mono break-all flex-1">{value}</p><button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
+    return <div className="flex items-start gap-2 min-w-0"><p className="text-sm font-mono break-words min-w-0 flex-1">{value}</p><button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
 }
 
 function TransactionHash({ value }: { value: string }) {
     const explorerUrl = `${CONTRACT.EXPLORER_URL}/tx/${value}`
-    return <div className="flex items-start gap-2"><p className="text-sm font-mono break-all flex-1">{value}</p><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><CopiableButton value={value} /></div>
+    return <div className="flex items-start gap-2 min-w-0"><p className="text-sm font-mono break-words min-w-0 flex-1">{value}</p><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><CopiableButton value={value} /></div>
 }
 
 function CopiableButton({ value }: { value: string }) {
