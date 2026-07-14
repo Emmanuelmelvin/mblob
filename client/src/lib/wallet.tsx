@@ -11,6 +11,7 @@ type Eip1193Provider = {
 type WalletContextValue = {
     address: Address | null
     connect: () => Promise<Address>
+    disconnect: () => void
     walletClient: ReturnType<typeof createWalletClient> | null
 }
 
@@ -56,6 +57,10 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         return selected
     }, [wallet])
 
+    const disconnect = useCallback(() => {
+        setAddress(null)
+    }, [])
+
     useEffect(() => {
         if (!wallet?.on) return
         const handleAccountsChanged = (accounts: unknown) => {
@@ -66,7 +71,7 @@ export function WalletProvider({ children }: { children: ReactNode }) {
         return () => wallet.removeListener?.('accountsChanged', handleAccountsChanged)
     }, [wallet])
 
-    return <WalletContext.Provider value={{ address, connect, walletClient }}>{children}</WalletContext.Provider>
+    return <WalletContext.Provider value={{ address, connect, disconnect, walletClient }}>{children}</WalletContext.Provider>
 }
 
 export function useWallet() {

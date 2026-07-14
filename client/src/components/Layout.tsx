@@ -1,6 +1,6 @@
 import React from 'react'
 import { Link, useRoute } from 'wouter'
-import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon } from '@radix-ui/react-icons'
+import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon } from '@radix-ui/react-icons'
 import { useWallet } from '../lib/wallet'
 
 const navItems = [
@@ -11,7 +11,7 @@ const navItems = [
 ] as const
 
 export function Layout({ children }: { children: React.ReactNode }) {
-    const { address, connect } = useWallet()
+    const { address, connect, disconnect } = useWallet()
     const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : null
     return (
         <div className="min-h-screen bg-white text-black flex flex-col">
@@ -40,12 +40,26 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                 </Link>
                             )
                         })}
-                        <button
-                            onClick={() => void connect().catch((error) => window.alert(error instanceof Error ? error.message : 'Unable to connect wallet'))}
-                            className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100"
-                        >
-                            {shortAddress ?? 'Connect wallet'}
-                        </button>
+                        {address ? (
+                            <div className="flex items-center gap-2">
+                                <span className="border border-black px-3 py-1.5 text-xs font-mono font-medium">{shortAddress}</span>
+                                <button
+                                    onClick={disconnect}
+                                    aria-label="Disconnect wallet"
+                                    className="border border-black px-2 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100 flex items-center gap-1"
+                                >
+                                    <ExitIcon className="w-3.5 h-3.5" />
+                                    Disconnect
+                                </button>
+                            </div>
+                        ) : (
+                            <button
+                                onClick={() => void connect().catch((error) => window.alert(error instanceof Error ? error.message : 'Unable to connect wallet'))}
+                                className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100"
+                            >
+                                Connect wallet
+                            </button>
+                        )}
                     </nav>
                 </div>
             </header>

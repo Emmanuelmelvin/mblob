@@ -29,6 +29,104 @@ export function Docs() {
             </section>
 
             <section>
+                <h2 className="text-xl font-bold tracking-tight text-black mb-3">Running Locally</h2>
+
+                <div className="border border-black divide-y divide-black">
+                    <div className="p-4">
+                        <p className="text-xs font-mono text-neutral-400 mb-2">Prerequisites</p>
+                        <ul className="text-sm text-neutral-600 space-y-1 list-disc list-inside">
+                            <li><a href="https://getfoundry.sh" target="_blank" rel="noopener noreferrer" className="text-neutral-500 hover:text-black">Foundry</a> (forge, cast, anvil)</li>
+                            <li>Docker + Docker Compose</li>
+                            <li>A browser wallet with Monad testnet added (e.g. MetaMask)</li>
+                            <li>Some test MON from a Monad testnet faucet</li>
+                        </ul>
+                    </div>
+
+                    <div className="p-4">
+                        <p className="text-xs font-mono text-neutral-400 mb-2">1. Smart Contract</p>
+                        <p className="text-sm text-neutral-600 leading-relaxed mb-2">
+                            Deploy the MblobRegistry contract to Monad testnet. From the <code className="text-xs bg-neutral-100 px-1">contract/</code> directory:
+                        </p>
+                        <pre className="bg-neutral-50 border border-black p-3 text-xs font-mono overflow-x-auto mb-2">
+                            {`# Set environment variables (do not commit)
+$env:MBLOB_GATEWAY_ADDRESS = "0xYourGatewayAddress"
+$env:MBLOB_PRICE_PER_BYTE_HOUR_WEI = "1"
+$env:MBLOB_MINIMUM_PRICE_WEI = "100000000000000"
+$env:MBLOB_PERMANENT_STORAGE_MULTIPLIER = "1000"
+$env:MBLOB_MAX_FILE_SIZE_BYTES = "104857600"
+$env:MBLOB_MAX_DURATION_HOURS = "720"
+$env:PRIVATE_KEY = "0xYourDeployerPrivateKey"
+$env:MONAD_RPC_URL = "https://testnet-rpc.monad.xyz"
+
+# Run tests first
+forge test
+
+# Deploy
+forge script script/DeployMblob.s.sol:DeployMblob --rpc-url $env:MONAD_RPC_URL --broadcast`}
+                        </pre>
+                        <p className="text-sm text-neutral-500 leading-relaxed">
+                            After deployment, note the deployed contract address. You will need it for the server <code className="text-xs bg-neutral-100 px-1">.env</code>.
+                        </p>
+                    </div>
+
+                    <div className="p-4">
+                        <p className="text-xs font-mono text-neutral-400 mb-2">2. Server & Storage Nodes</p>
+                        <p className="text-sm text-neutral-600 leading-relaxed mb-2">
+                            Copy <code className="text-xs bg-neutral-100 px-1">server/.env.example</code> to <code className="text-xs bg-neutral-100 px-1">server/.env</code> and fill in all values:
+                        </p>
+                        <pre className="bg-neutral-50 border border-black p-3 text-xs font-mono overflow-x-auto mb-2">
+                            {`PORT=3000
+DATABASE_URL=postgres://mblob:mblob@postgres:5432/mblob
+MONAD_RPC_URL=https://testnet-rpc.monad.xyz
+MBLOB_REGISTRY_ADDRESS=0xDeployedContractAddress
+GATEWAY_PRIVATE_KEY=0x...
+DATA_ENCRYPTION_KEY=  (generate with: openssl rand -base64 32)
+STORAGE_NODE_URLS=http://storage-node-1:4001,http://storage-node-2:4002,http://storage-node-3:4003
+STORAGE_NODE_TOKEN=replace-with-a-long-random-token
+MAX_UPLOAD_BYTES=26214400`}
+                        </pre>
+                        <p className="text-sm text-neutral-600 leading-relaxed mb-1 font-semibold">Environment variables explained:</p>
+                        <ul className="text-xs text-neutral-500 space-y-1 list-disc list-inside mb-3">
+                            <li><strong>DATABASE_URL</strong> — PostgreSQL connection. In Docker this points to the <code className="text-xs bg-neutral-100 px-1">postgres</code> service.</li>
+                            <li><strong>MONAD_RPC_URL</strong> — RPC endpoint for Monad testnet.</li>
+                            <li><strong>MBLOB_REGISTRY_ADDRESS</strong> — The deployed MblobRegistry contract address from step 1.</li>
+                            <li><strong>GATEWAY_PRIVATE_KEY</strong> — Private key of the gateway wallet. This is the address that calls <code className="text-xs bg-neutral-100 px-1">activateBlob()</code>. Must match the <code className="text-xs bg-neutral-100 px-1">gateway</code> address used during contract deployment.</li>
+                            <li><strong>DATA_ENCRYPTION_KEY</strong> — A 32-byte base64-encoded key for encrypting per-file data keys at rest. Generate with <code className="text-xs bg-neutral-100 px-1">openssl rand -base64 32</code>.</li>
+                            <li><strong>STORAGE_NODE_URLS</strong> — Comma-separated URLs of the three storage nodes. In Docker they are internal service names.</li>
+                            <li><strong>STORAGE_NODE_TOKEN</strong> — Shared secret that storage nodes use to authenticate internal requests from the gateway. Must be at least 24 characters.</li>
+                        </ul>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                            Then from the repository root, run everything with Docker:
+                        </p>
+                        <pre className="bg-neutral-50 border border-black p-3 text-xs font-mono overflow-x-auto mt-2">
+                            {`docker compose up --build`}
+                        </pre>
+                        <p className="text-sm text-neutral-500 leading-relaxed mt-2">
+                            This starts: PostgreSQL, the gateway (port 3000), three storage nodes (internal ports 4001-4003), and the client (port 8080).
+                        </p>
+                    </div>
+
+                    <div className="p-4">
+                        <p className="text-xs font-mono text-neutral-400 mb-2">3. Client</p>
+                        <p className="text-sm text-neutral-600 leading-relaxed mb-2">
+                            The client is served by Nginx inside Docker. Open <code className="text-xs bg-neutral-100 px-1">http://localhost:8080</code> in your browser.
+                        </p>
+                        <p className="text-sm text-neutral-600 leading-relaxed">
+                            For development with hot-reload, you can run the client separately:
+                        </p>
+                        <pre className="bg-neutral-50 border border-black p-3 text-xs font-mono overflow-x-auto mt-2">
+                            {`cd client
+npm install
+npm run dev`}
+                        </pre>
+                        <p className="text-sm text-neutral-500 leading-relaxed mt-2">
+                            Make sure the gateway is running on port 3000. The client proxies API requests to it via Vite's proxy configuration.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <section>
                 <h2 className="text-xl font-bold tracking-tight text-black mb-3">Upload Flow</h2>
                 <ol className="border border-black divide-y divide-black">
                     {[
@@ -87,6 +185,62 @@ export function Docs() {
                             <p className="text-sm text-neutral-600 leading-relaxed">{desc}</p>
                         </div>
                     ))}
+                </div>
+            </section>
+
+            <section>
+                <h2 className="text-xl font-bold tracking-tight text-black mb-3">Wallet Signature Format</h2>
+                <div className="border border-black p-4">
+                    <p className="text-sm text-neutral-600 leading-relaxed mb-2">
+                        The client signs a plain-text message and sends the address, nonce, and signature as HTTP headers:
+                    </p>
+                    <pre className="bg-neutral-50 border border-black p-3 text-xs font-mono overflow-x-auto mb-3">
+                        {`Mblob upload authorization
+Blob ID: 1
+Nonce: unique-random-value`}
+                    </pre>
+                    <p className="text-sm text-neutral-600 leading-relaxed mb-2">Headers:</p>
+                    <pre className="bg-neutral-50 border border-black p-3 text-xs font-mono overflow-x-auto mb-2">
+                        {`x-mblob-address: 0xYourAddress
+x-mblob-nonce: unique-random-value
+x-mblob-signature: 0xSignedMessage
+x-create-tx-hash: 0xCreateBlobTransactionHash`}
+                    </pre>
+                    <p className="text-xs text-neutral-500 leading-relaxed">
+                        Use <code className="text-xs bg-neutral-100 px-1">download</code> in place of <code className="text-xs bg-neutral-100 px-1">upload</code> for download authorization. Each nonce can be used only once and expires after ten minutes.
+                    </p>
+                </div>
+            </section>
+
+            <section>
+                <h2 className="text-xl font-bold tracking-tight text-black mb-3">Flow Diagram</h2>
+                <div className="border border-black p-4">
+                    <pre className="text-xs font-mono leading-relaxed overflow-x-auto">
+                        {`User Browser              Gateway                 Storage Nodes           Monad
+    |                       |                          |                     |
+    |-- createBlob() -------|--------------------------|-------------------->|
+    |  (pay MON, get blobId) |                          |                     |
+    |                       |                          |                     |
+    |-- upload(file) ------>|                          |                     |
+    |  (signed auth)        |                          |                     |
+    |                       |-- verify ownership ----->|-------------------->|
+    |                       |-- encrypt & replicate -->|                     |
+    |                       |                          |-- store shard ----->|
+    |                       |<-- receipt --------------|                     |
+    |                       |-- activateBlob() ------->|-------------------->|
+    |<-- { publicId,        |                          |                     |
+    |      txHashes } ------|                          |                     |
+    |                       |                          |                     |
+    |-- lookup(blobId) ---->|                          |                     |
+    |<-- { metadata } ------|                          |                     |
+    |                       |                          |                     |
+    |-- download(blobId) -->|                          |                     |
+    |  (signed auth)        |-- verify ownership ----->|-------------------->|
+    |                       |-- fetch shard ---------->|                     |
+    |                       |<-- ciphertext -----------|                     |
+    |                       |-- decrypt & verify ------|                     |
+    |<-- original file -----|                          |                     |`}
+                    </pre>
                 </div>
             </section>
 
