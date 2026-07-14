@@ -14,7 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const { address, connect, disconnect } = useWallet()
     const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : null
     const [menuOpen, setMenuOpen] = useState(false)
-    const [location] = useLocation()   // ✅ single hook call, top-level
+    const [location] = useLocation()
 
     return (
         <div className="min-h-screen bg-white text-black flex flex-col">
