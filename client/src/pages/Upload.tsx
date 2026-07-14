@@ -1,8 +1,9 @@
 import { useRef, useState } from 'react'
-import { CheckIcon, Cross2Icon, UploadIcon } from '@radix-ui/react-icons'
+import { CheckIcon, CopyIcon, Cross2Icon, ExternalLinkIcon, UploadIcon } from '@radix-ui/react-icons'
 import { formatBytes } from '../lib/utils'
 import { uploadBlob } from '../lib/mblob'
 import { useWallet } from '../lib/wallet'
+import { CONTRACT } from '../lib/constants'
 
 type UploadStep = 'select' | 'paying' | 'uploading' | 'done' | 'error'
 
@@ -59,11 +60,26 @@ export function Upload() {
 
         {step === 'paying' && <Status message="Confirm the payment in your wallet, then wait for Monad to confirm the transaction." />}
         {step === 'uploading' && <Status message="Sign the upload authorization in your wallet. The gateway is encrypting and replicating your file." />}
-        {step === 'done' && blobId && <div className="border border-black p-6 space-y-4"><div className="flex items-center gap-3"><CheckIcon className="w-5 h-5" /><p className="text-sm font-medium">Blob uploaded and activated</p></div><div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">BLOB ID — save this value</p><p className="text-sm font-mono break-all">{publicId}</p></div>{transactionHash && <p className="text-xs text-neutral-500 break-all">Transaction: {transactionHash}</p>}<button onClick={() => { setFile(null); setBlobId(null); setPublicId(null); setStep('select') }} className="w-full px-4 py-3 border border-black text-sm font-medium hover:bg-neutral-100">Upload another file</button></div>}
+        {step === 'done' && blobId && <div className="border border-black p-6 space-y-4"><div className="flex items-center gap-3"><CheckIcon className="w-5 h-5" /><p className="text-sm font-medium">Blob uploaded and activated</p></div><div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">BLOB ID — save this value</p><Copiable value={publicId!} /></div>{transactionHash && <div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">TRANSACTION HASH</p><TransactionHash value={transactionHash} /></div>}<button onClick={() => { setFile(null); setBlobId(null); setPublicId(null); setTransactionHash(null); setStep('select') }} className="w-full px-4 py-3 border border-black text-sm font-medium hover:bg-neutral-100">Upload another file</button></div>}
         {step === 'error' && <div className="border border-red-800 p-6 bg-red-50"><p className="text-sm font-medium text-red-800">Upload failed</p><p className="mt-1 text-xs text-red-700">{error}</p><button onClick={() => setStep('select')} className="mt-4 px-4 py-2 border border-red-800 text-sm text-red-800">Try again</button></div>}
     </div>
 }
 
 function Status({ message }: { message: string }) {
     return <div className="border border-black p-8 text-center"><div className="flex flex-col items-center gap-3"><div className="w-6 h-6 border-2 border-black border-t-transparent animate-spin" /><p className="text-sm text-neutral-500">{message}</p></div></div>
+}
+
+function Copiable({ value }: { value: string }) {
+    const [copied, setCopied] = useState(false)
+    async function copy() {
+        await navigator.clipboard.writeText(value)
+        setCopied(true)
+        setTimeout(() => setCopied(false), 1500)
+    }
+    return <div className="flex items-start gap-2"><p className="text-sm font-mono break-all flex-1">{value}</p><button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
+}
+
+function TransactionHash({ value }: { value: string }) {
+    const explorerUrl = `${CONTRACT.EXPLORER_URL}/tx/${value}`
+    return <div className="flex items-start gap-2"><p className="text-sm font-mono break-all flex-1">{value}</p><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><Copiable value={value} /></div>
 }
