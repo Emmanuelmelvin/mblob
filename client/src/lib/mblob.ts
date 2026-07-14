@@ -25,14 +25,14 @@ export const bytes32Hash = async (file: File): Promise<Hex> => {
 const authorizationMessage = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
     `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`
 
-async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download', blobId: string, init: RequestInit = {}) {
+async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage(operation, blobId, nonce) })
     const headers = new Headers(init.headers)
     headers.set('x-mblob-address', address)
     headers.set('x-mblob-signature', signature)
     headers.set('x-mblob-nonce', nonce)
-    return fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}${operation === 'upload' ? '/upload' : '/download'}`, { ...init, headers })
+    return fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}${path}`, { ...init, headers })
 }
 
 export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, file: File) {
@@ -46,19 +46,19 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
 
     const body = new FormData()
     body.set('file', file)
-    const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), { method: 'POST', body })
+    const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), '/upload', { method: 'POST', body })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
     return { blobId: blobId.toString(), transactionHash }
 }
 
 export async function getBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
-    const response = await authorizedFetch(walletClient, address, 'download', blobId)
+    const response = await authorizedFetch(walletClient, address, 'download', blobId, '')
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
     return response.json() as Promise<{ blobId: string; owner: string; fileHash: string; status: number; stored: boolean }>
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
-    const response = await authorizedFetch(walletClient, address, 'download', blobId)
+    const response = await authorizedFetch(walletClient, address, 'download', blobId, '/download')
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Download failed')
     const file = await response.blob()
     const url = URL.createObjectURL(file)
