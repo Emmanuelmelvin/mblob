@@ -1,0 +1,45 @@
+# Secrets and machine-specific configuration
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p12
+*.pfx
+keystore/
+keystores/
+contract/config.local.sh
+
+# Node.js dependencies, builds, and logs
+node_modules/
+dist/
+build/
+coverage/
+.next/
+.vite/
+.turbo/
+*.tsbuildinfo
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Foundry generated files
+contract/out/
+contract/cache/
+contract/broadcast/
+
+# Local storage-node data and uploads
+storage-data/
+uploads/
+data/
+*.sqlite
+*.sqlite3
+
+# Editor and operating-system files
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+*.swp
+*.swo
