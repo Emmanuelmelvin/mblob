@@ -2,6 +2,7 @@ import React from 'react'
 import { Link, useRoute } from 'wouter'
 import { UploadIcon, DownloadIcon, HomeIcon } from '@radix-ui/react-icons'
 import { useWallet } from '../lib/wallet'
+import logo from '../assets/mblob.png'
 
 const navItems = [
     { href: '/', label: 'Home', icon: HomeIcon },
@@ -17,8 +18,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Header */}
             <header className="border-b border-black">
                 <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="text-lg font-semibold tracking-tight no-underline text-black">
-                        mblob
+                    <Link href="/" className="flex items-center gap-2 no-underline text-black" aria-label="Mblob home">
+                        <img src={logo} alt="Mblob" className="h-9 w-9 rounded-lg object-cover" />
+                        <span className="text-lg font-semibold tracking-tight">mblob</span>
                     </Link>
                     <nav className="flex items-center gap-8">
                         {navItems.map((item) => {
