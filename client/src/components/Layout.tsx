@@ -1,6 +1,7 @@
 import React from 'react'
 import { Link, useRoute } from 'wouter'
 import { UploadIcon, DownloadIcon, HomeIcon } from '@radix-ui/react-icons'
+import { useWallet } from '../lib/wallet'
 
 const navItems = [
     { href: '/', label: 'Home', icon: HomeIcon },
@@ -9,6 +10,8 @@ const navItems = [
 ] as const
 
 export function Layout({ children }: { children: React.ReactNode }) {
+    const { address, connect } = useWallet()
+    const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : null
     return (
         <div className="min-h-screen bg-white text-black flex flex-col">
             {/* Header */}
@@ -35,6 +38,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
                                 </Link>
                             )
                         })}
+                        <button
+                            onClick={() => void connect().catch((error) => window.alert(error instanceof Error ? error.message : 'Unable to connect wallet'))}
+                            className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100"
+                        >
+                            {shortAddress ?? 'Connect wallet'}
+                        </button>
                     </nav>
                 </div>
             </header>

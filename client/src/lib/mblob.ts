@@ -1,0 +1,70 @@
+import { createPublicClient, defineChain, http, parseEventLogs, zeroHash, type Address, type Hex } from 'viem'
+import { CONTRACT, GATEWAY } from './constants'
+
+export const monadTestnet = defineChain({
+    id: CONTRACT.CHAIN_ID,
+    name: 'Monad Testnet',
+    nativeCurrency: { name: 'MON', symbol: 'MON', decimals: 18 },
+    rpcUrls: { default: { http: [CONTRACT.RPC_URL] } },
+})
+
+export const registryAbi = [
+    { type: 'function', name: 'quote', stateMutability: 'view', inputs: [{ name: 'fileSizeBytes', type: 'uint64' }, { name: 'durationHours', type: 'uint64' }, { name: 'replicationFactor', type: 'uint8' }, { name: 'permanent', type: 'bool' }], outputs: [{ type: 'uint256' }] },
+    { type: 'function', name: 'createBlob', stateMutability: 'payable', inputs: [{ name: 'fileHash', type: 'bytes32' }, { name: 'encryptionMetadataHash', type: 'bytes32' }, { name: 'fileSizeBytes', type: 'uint64' }, { name: 'durationHours', type: 'uint64' }, { name: 'replicationFactor', type: 'uint8' }, { name: 'permanent', type: 'bool' }], outputs: [{ name: 'blobId', type: 'uint256' }] },
+    { type: 'function', name: 'getBlob', stateMutability: 'view', inputs: [{ name: 'blobId', type: 'uint256' }], outputs: [{ type: 'tuple', components: [{ name: 'owner', type: 'address' }, { name: 'fileHash', type: 'bytes32' }, { name: 'encryptionMetadataHash', type: 'bytes32' }, { name: 'storageNodesCommitment', type: 'bytes32' }, { name: 'fileSizeBytes', type: 'uint64' }, { name: 'createdAt', type: 'uint64' }, { name: 'expiresAt', type: 'uint64' }, { name: 'replicationFactor', type: 'uint8' }, { name: 'deletable', type: 'bool' }, { name: 'status', type: 'uint8' }, { name: 'payment', type: 'uint256' }] }] },
+    { type: 'event', name: 'BlobCreated', inputs: [{ name: 'blobId', indexed: true, type: 'uint256' }, { name: 'owner', indexed: true, type: 'address' }, { name: 'fileHash', indexed: true, type: 'bytes32' }, { name: 'expiresAt', indexed: false, type: 'uint64' }, { name: 'payment', indexed: false, type: 'uint256' }] },
+] as const
+
+export const publicClient = createPublicClient({ chain: monadTestnet, transport: http(CONTRACT.RPC_URL) })
+
+export const bytes32Hash = async (file: File): Promise<Hex> => {
+    const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+    return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
+}
+
+const authorizationMessage = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
+    `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`
+
+async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download', blobId: string, init: RequestInit = {}) {
+    const nonce = crypto.randomUUID()
+    const signature = await walletClient.signMessage({ account: address, message: authorizationMessage(operation, blobId, nonce) })
+    const headers = new Headers(init.headers)
+    headers.set('x-mblob-address', address)
+    headers.set('x-mblob-signature', signature)
+    headers.set('x-mblob-nonce', nonce)
+    return fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}${operation === 'upload' ? '/upload' : '/download'}`, { ...init, headers })
+}
+
+export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, file: File) {
+    const fileHash = await bytes32Hash(file)
+    const quote = await publicClient.readContract({ address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'quote', args: [BigInt(file.size), 24n, 3, false] })
+    const transactionHash = await walletClient.writeContract({ account: address, chain: monadTestnet, address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'createBlob', args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false], value: quote })
+    const receipt = await publicClient.waitForTransactionReceipt({ hash: transactionHash })
+    const event = parseEventLogs({ abi: registryAbi, logs: receipt.logs, eventName: 'BlobCreated' })[0]
+    const blobId = event?.args.blobId
+    if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
+
+    const body = new FormData()
+    body.set('file', file)
+    const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), { method: 'POST', body })
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
+    return { blobId: blobId.toString(), transactionHash }
+}
+
+export async function getBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
+    const response = await authorizedFetch(walletClient, address, 'download', blobId)
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
+    return response.json() as Promise<{ blobId: string; owner: string; fileHash: string; status: number; stored: boolean }>
+}
+
+export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
+    const response = await authorizedFetch(walletClient, address, 'download', blobId)
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Download failed')
+    const file = await response.blob()
+    const url = URL.createObjectURL(file)
+    const link = document.createElement('a')
+    link.href = url
+    link.download = `mblob-${blobId}`
+    link.click()
+    URL.revokeObjectURL(url)
+}
