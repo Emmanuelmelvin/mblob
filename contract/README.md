@@ -17,6 +17,28 @@
 - `storageNodesCommitment` is a hash of node IDs and upload receipts. The actual identifiers stay off-chain so node changes do not expose infrastructure details or consume extra gas.
 - Payments are native MON for the MVP. ERC-20 payment support can be added after the upload flow works.
 
-## Next setup step
+## Run locally
 
-Initialize a Foundry project in this folder, then add deployment and unit tests. The contract source is already located at `src/MblobRegistry.sol` so it matches Foundry's expected layout.
+Install [Foundry](https://getfoundry.sh), then run from this directory:
+
+```powershell
+forge test
+```
+
+The project includes focused tests in `test/MblobRegistry.t.sol` and a deployment script in `script/DeployMblob.s.sol`.
+
+## Deploy to Monad
+
+Set the environment values in your terminal (do not commit private keys), then broadcast with your Monad RPC URL:
+
+```powershell
+$env:MBLOB_GATEWAY_ADDRESS = "0x..."
+$env:MBLOB_PRICE_PER_BYTE_HOUR_WEI = "1"
+$env:MBLOB_MINIMUM_PRICE_WEI = "100000000000000"
+$env:MBLOB_PERMANENT_STORAGE_MULTIPLIER = "1000"
+$env:MBLOB_MAX_FILE_SIZE_BYTES = "104857600"
+$env:MBLOB_MAX_DURATION_HOURS = "720"
+$env:PRIVATE_KEY = "..."
+
+forge script script/DeployMblob.s.sol:DeployMblob --rpc-url $env:MONAD_RPC_URL --broadcast
+```

@@ -158,7 +158,7 @@ contract MblobRegistry {
         if (!blob.deletable || blob.expiresAt == 0 || block.timestamp < blob.expiresAt) {
             revert BlobNotExpired(blobId, blob.expiresAt);
         }
-        if (blob.status == BlobStatus.Deleted) revert InvalidStatus(BlobStatus.Active, blob.status);
+        if (blob.status != BlobStatus.Active) revert InvalidStatus(BlobStatus.Active, blob.status);
 
         blob.status = BlobStatus.Deleted;
         emit BlobDeleted(blobId);
