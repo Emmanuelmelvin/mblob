@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link, useRoute } from 'wouter'
+import { Link, useLocation } from 'wouter'
 import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon } from '@radix-ui/react-icons'
 import { useWallet } from '../lib/wallet'
 
@@ -14,6 +14,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
     const { address, connect, disconnect } = useWallet()
     const shortAddress = address ? `${address.slice(0, 6)}…${address.slice(-4)}` : null
     const [menuOpen, setMenuOpen] = useState(false)
+    const [location] = useLocation()   // ✅ single hook call, top-level
 
     return (
         <div className="min-h-screen bg-white text-black flex flex-col">
@@ -27,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     {/* Desktop */}
                     <div className="hidden md:flex items-center gap-8">
                         {navItems.map((item) => {
-                            const [isActive] = useRoute(item.href)
+                            const isActive = item.href === '/' ? location === '/' : location.startsWith(item.href) // ✅ plain comparison, no hook
                             const Icon = item.icon
                             return (
                                 <Link key={item.href} href={item.href} className={`flex items-center gap-1.5 text-sm font-medium no-underline ${isActive ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
@@ -51,7 +52,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         )}
                     </div>
 
-                    {/* Mobile hamburger - using text characters instead of SVG icons */}
+                    {/* Mobile hamburger */}
                     <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" className="md:hidden border border-black w-9 h-9 flex items-center justify-center text-sm select-none">
                         {menuOpen ? '\u2715' : '\u2630'}
                     </button>
@@ -62,7 +63,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     <div className="md:hidden border-t border-black">
                         <div className="px-6 py-4 space-y-2">
                             {navItems.map((item) => {
-                                const [isActive] = useRoute(item.href)
+                                const isActive = item.href === '/' ? location === '/' : location.startsWith(item.href) // ✅ same fix here
                                 const Icon = item.icon
                                 return (
                                     <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className={`flex items-center gap-2 py-1 text-sm font-medium no-underline ${isActive ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
