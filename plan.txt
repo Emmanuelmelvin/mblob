@@ -1,0 +1,212 @@
+
+Architecture
+
+                Client
+                   │
+        Calculate Storage Cost
+                   │
+          Sign Payment Transaction
+                   │
+                   ▼
+             Backend Gateway
+                   │
+     Verify payment using same algorithm
+                   │
+          Sign Monad transaction
+                   │
+          Create Blob Object on-chain
+                   │
+          Encrypt & Split File
+                   │
+        ┌──────────┼──────────┐
+        ▼ ▼ ▼
+    Storage 1 Storage 2 Storage 3
+        │ │ │
+      Blob A Blob B Blob C
+
+---
+
+Storage Pricing
+
+Storage cost is deterministic.
+
+Both the client and backend execute the exact same pricing algorithm using:
+
+- File size
+- Whether the blob is permanent or deletable
+- Storage duration (epochs)
+- Replication factor
+
+Because both parties compute the same value independently, the backend can verify that the payment sent by the client is correct without relying on any stored pricing information.
+
+---
+
+Upload Flow
+
+1. User selects a file.
+2. Client calculates the required storage payment.
+3. User signs and submits the payment transaction.
+4. The payment digest is attached to the upload request.
+5. Backend recomputes the storage cost.
+6. Backend verifies the payment.
+7. Backend signs a Monad transaction.
+8. A Blob Object is created on-chain as a shared object.
+9. File is encrypted.
+10. Encrypted file is split into multiple shards.
+11. Shards are distributed across three independent storage nodes.
+12. Metadata is updated on-chain.
+
+---
+
+Blob Object
+
+The on-chain Blob Object contains metadata only.
+
+Example fields:
+
+- Blob ID
+- Owner
+- Payment transaction digest
+- File hash
+- File size
+- Creation epoch
+- Expiration epoch
+- Deletable flag
+- Storage node identifiers
+- Encryption metadata
+
+The blockchain never stores the actual file.
+
+---
+
+Storage Nodes
+
+Each storage node is responsible for:
+
+- Receiving encrypted shards
+- Persisting data locally
+- Serving retrieval requests
+- Reporting storage health
+
+Nodes never receive the original plaintext file.
+
+---
+
+Encryption
+
+Before distribution:
+
+- File is encrypted.
+- Encrypted payload is split into shards.
+- Each shard is stored on a different node.
+
+Without reconstruction, individual shards reveal no usable information.
+
+---
+
+Cleanup Worker
+
+A background worker continuously scans the blockchain for blobs approaching expiration.
+
+For each expired blob:
+
+1. Read Blob Object.
+2. Locate associated storage nodes.
+3. Delete stored shards.
+4. Mark blob as deleted.
+
+Permanent blobs are ignored.
+
+---
+
+Retrieval Flow
+
+1. Client requests a Blob ID.
+2. Backend fetches blob metadata from Monad.
+3. Storage node locations are identified.
+4. Backend requests each encrypted shard.
+5. Shards are reconstructed.
+6. Payload is decrypted.
+7. Original file is streamed back to the client.
+
+---
+
+Components
+
+Frontend
+
+- Storage cost calculator
+- Wallet integration
+- Upload interface
+- Retrieval interface
+
+---
+
+Backend
+
+- Payment verification
+- Blob creation
+- Encryption
+- Sharding
+- Node coordination
+- File reconstruction
+
+---
+
+Storage Nodes
+
+- Store encrypted shards
+- Serve shard retrieval
+- Delete expired data
+- Report health
+
+---
+
+Cleanup Worker
+
+- Monitor blob expiration
+- Trigger shard deletion
+- Maintain storage hygiene
+
+---
+
+Security
+
+- Deterministic pricing prevents underpayment.
+- Files are encrypted before leaving the backend.
+- Storage nodes never possess plaintext files.
+- Blockchain stores metadata only.
+- Replication across three nodes improves availability.
+
+---
+
+Future Improvements
+
+- Proof-of-storage verification
+- Node reputation system
+- Automatic shard repair
+- Reed–Solomon erasure coding
+- Incentivized storage providers
+- Public storage marketplace
+- Zero-knowledge storage proofs
+- Content-addressed deduplication
+
+---
+
+Tech Stack
+
+- Monad
+- Solidity
+- Node.js
+- Express
+- Docker
+- AES-256 Encryption
+- SHA-256 Hashing
+- React
+- TypeScript
+
+---
+
+Vision
+
+BlobStore aims to provide a simple, transparent, and decentralized storage layer where payments are settled on-chain, metadata is immutable, and encrypted data is replicated across independent storage nodes for reliable retrieval.
