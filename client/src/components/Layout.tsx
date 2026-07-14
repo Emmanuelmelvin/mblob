@@ -1,6 +1,6 @@
 import React, { useState } from 'react'
 import { Link, useRoute } from 'wouter'
-import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon, HamburgerMenuIcon, Cross1Icon } from '@radix-ui/react-icons'
+import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon } from '@radix-ui/react-icons'
 import { useWallet } from '../lib/wallet'
 
 const navItems = [
@@ -20,25 +20,18 @@ export function Layout({ children }: { children: React.ReactNode }) {
             {/* Header */}
             <header className="border-b border-black">
                 <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
-                    <Link href="/" className="flex items-center gap-2 no-underline text-black" aria-label="Mblob home">
+                    <Link href="/" className="flex items-center gap-2 no-underline text-black shrink-0" aria-label="Mblob home">
                         <img src="/mblob.png" alt="Mblob" className="h-9 w-9 rounded-lg object-cover" />
                         <span className="text-lg font-semibold tracking-tight">mblob</span>
                     </Link>
 
-                    {/* Desktop navigation */}
+                    {/* Desktop nav */}
                     <div className="hidden md:flex items-center gap-8">
                         {navItems.map((item) => {
                             const [isActive] = useRoute(item.href)
                             const Icon = item.icon
                             return (
-                                <Link
-                                    key={item.href}
-                                    href={item.href}
-                                    className={`flex items-center gap-1.5 text-sm font-medium no-underline transition-colors ${isActive
-                                        ? 'text-black'
-                                        : 'text-neutral-400 hover:text-black'
-                                        }`}
-                                >
+                                <Link key={item.href} href={item.href} className={`flex items-center gap-1.5 text-sm font-medium no-underline ${isActive ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
                                     <Icon className="w-4 h-4" />
                                     {item.label}
                                 </Link>
@@ -47,74 +40,53 @@ export function Layout({ children }: { children: React.ReactNode }) {
                         {address ? (
                             <div className="flex items-center gap-2">
                                 <span className="border border-black px-3 py-1.5 text-xs font-mono font-medium">{shortAddress}</span>
-                                <button
-                                    onClick={disconnect}
-                                    aria-label="Disconnect wallet"
-                                    className="border border-black px-2 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100 flex items-center gap-1"
-                                >
+                                <button onClick={disconnect} className="border border-black px-2 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100 flex items-center gap-1">
                                     <ExitIcon className="w-3.5 h-3.5" />
                                     Disconnect
                                 </button>
                             </div>
                         ) : (
-                            <button
-                                onClick={() => void connect().catch((error) => window.alert(error instanceof Error ? error.message : 'Unable to connect wallet'))}
-                                className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100"
-                            >
+                            <button onClick={() => void connect().catch((e) => window.alert(e instanceof Error ? e.message : 'Connect failed'))} className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100">
                                 Connect wallet
                             </button>
                         )}
                     </div>
 
                     {/* Mobile hamburger */}
-                    <button
-                        onClick={() => setMenuOpen(!menuOpen)}
-                        aria-label="Toggle navigation menu"
-                        className="md:hidden border border-black p-2"
-                    >
-                        {menuOpen ? <Cross1Icon className="w-4 h-4" /> : <HamburgerMenuIcon className="w-4 h-4" />}
+                    <button onClick={() => setMenuOpen(!menuOpen)} aria-label="Menu" className="md:hidden border border-black p-2 leading-none">
+                        {menuOpen ? (
+                            <svg width="16" height="16" viewBox="0 0 15 15" fill="currentColor"><path d="M11.78 4.78a.5.5 0 0 0-.7-.7L7.5 7.79 4.22 4.52a.5.5 0 0 0-.7.7l3.27 3.27-3.27 3.27a.5.5 0 0 0 .7.7l3.27-3.27 3.27 3.27a.5.5 0 0 0 .7-.7L8.21 8.24l3.27-3.27Z" fillRule="evenodd" clipRule="evenodd" /></svg>
+                        ) : (
+                            <svg width="16" height="16" viewBox="0 0 15 15" fill="currentColor"><path d="M2 3.5a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5Zm0 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5Zm0 4a.5.5 0 0 1 .5-.5h10a.5.5 0 0 1 0 1h-10a.5.5 0 0 1-.5-.5Z" fillRule="evenodd" clipRule="evenodd" /></svg>
+                        )}
                     </button>
                 </div>
 
                 {/* Mobile dropdown */}
                 {menuOpen && (
-                    <div className="md:hidden border-t border-black bg-white">
-                        <div className="px-6 py-4 flex flex-col gap-3">
+                    <div className="md:hidden border-t border-black">
+                        <div className="px-6 py-4 space-y-2">
                             {navItems.map((item) => {
                                 const [isActive] = useRoute(item.href)
                                 const Icon = item.icon
                                 return (
-                                    <Link
-                                        key={item.href}
-                                        href={item.href}
-                                        onClick={() => setMenuOpen(false)}
-                                        className={`flex items-center gap-2 text-sm font-medium no-underline transition-colors ${isActive
-                                            ? 'text-black'
-                                            : 'text-neutral-400 hover:text-black'
-                                            }`}
-                                    >
+                                    <Link key={item.href} href={item.href} onClick={() => setMenuOpen(false)} className={`flex items-center gap-2 py-1 text-sm font-medium no-underline ${isActive ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
                                         <Icon className="w-4 h-4" />
                                         {item.label}
                                     </Link>
                                 )
                             })}
-                            <hr className="border-black" />
+                            <hr className="border-black my-2" />
                             {address ? (
-                                <div className="flex flex-col gap-2">
-                                    <span className="border border-black px-3 py-1.5 text-xs font-mono font-medium text-center">{shortAddress}</span>
-                                    <button
-                                        onClick={() => { disconnect(); setMenuOpen(false) }}
-                                        className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100 flex items-center justify-center gap-1"
-                                    >
+                                <div className="flex items-center gap-2 pt-1">
+                                    <span className="border border-black px-3 py-1.5 text-xs font-mono">{shortAddress}</span>
+                                    <button onClick={() => { disconnect(); setMenuOpen(false) }} className="border border-black px-2 py-1.5 text-xs font-mono hover:bg-neutral-100 flex items-center gap-1">
                                         <ExitIcon className="w-3.5 h-3.5" />
                                         Disconnect
                                     </button>
                                 </div>
                             ) : (
-                                <button
-                                    onClick={() => { void connect().catch((error) => window.alert(error instanceof Error ? error.message : 'Unable to connect wallet')); setMenuOpen(false) }}
-                                    className="border border-black px-3 py-1.5 text-xs font-mono font-medium hover:bg-neutral-100"
-                                >
+                                <button onClick={() => { void connect().catch((e) => window.alert(e instanceof Error ? e.message : 'Connect failed')); setMenuOpen(false) }} className="border border-black px-3 py-1.5 text-xs font-mono hover:bg-neutral-100">
                                     Connect wallet
                                 </button>
                             )}
@@ -123,7 +95,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                 )}
             </header>
 
-            {/* Main content */}
+            {/* Main */}
             <main className="flex-1 max-w-5xl mx-auto px-6 py-12 w-full">
                 {children}
             </main>
