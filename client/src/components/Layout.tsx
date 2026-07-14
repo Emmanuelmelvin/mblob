@@ -28,7 +28,7 @@ export function Layout({ children }: { children: React.ReactNode }) {
                     {/* Desktop */}
                     <div className="hidden md:flex items-center gap-8">
                         {navItems.map((item) => {
-                            const isActive = item.href === '/' ? location === '/' : location.startsWith(item.href) // ✅ plain comparison, no hook
+                            const isActive = item.href === '/' ? location === '/' : location.startsWith(item.href)
                             const Icon = item.icon
                             return (
                                 <Link key={item.href} href={item.href} className={`flex items-center gap-1.5 text-sm font-medium no-underline ${isActive ? 'text-black' : 'text-neutral-400 hover:text-black'}`}>
