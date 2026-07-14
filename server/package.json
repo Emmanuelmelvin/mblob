@@ -1,0 +1,27 @@
+{
+  "name": "mblob-server",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "npm exec -- tsx watch src/index.ts",
+    "build": "npm exec -- tsc -p tsconfig.json",
+    "start": "node dist/index.js",
+    "start:storage-node": "node dist/storage-node.js",
+    "typecheck": "npm exec -- tsc --noEmit"
+  },
+  "dependencies": {
+    "@hono/node-server": "^1.19.0",
+    "dotenv": "^16.6.1",
+    "hono": "^4.9.0",
+    "pino": "^9.9.0",
+    "postgres": "^3.4.7",
+    "viem": "^2.37.0",
+    "zod": "^4.1.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.18.0",
+    "tsx": "^4.20.0",
+    "typescript": "^5.9.0"
+  }
+}

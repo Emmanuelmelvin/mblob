@@ -1,0 +1,70 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: mblob
+      POSTGRES_PASSWORD: mblob
+      POSTGRES_DB: mblob
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mblob -d mblob"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  gateway:
+    build: ./server
+    env_file: ./server/.env
+    environment:
+      DATABASE_URL: postgres://mblob:mblob@postgres:5432/mblob
+      STORAGE_NODE_URLS: http://storage-node-1:4001,http://storage-node-2:4002,http://storage-node-3:4003
+    ports:
+      - "3000:3000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+      storage-node-1:
+        condition: service_started
+      storage-node-2:
+        condition: service_started
+      storage-node-3:
+        condition: service_started
+
+  storage-node-1:
+    build: ./server
+    command: node dist/storage-node.js
+    env_file: ./server/.env
+    environment:
+      STORAGE_NODE_PORT: 4001
+      STORAGE_DATA_DIR: /data
+    volumes:
+      - storage-node-1-data:/data
+
+  storage-node-2:
+    build: ./server
+    command: node dist/storage-node.js
+    env_file: ./server/.env
+    environment:
+      STORAGE_NODE_PORT: 4001
+      STORAGE_DATA_DIR: /data
+    volumes:
+      - storage-node-2-data:/data
+
+  storage-node-3:
+    build: ./server
+    command: node dist/storage-node.js
+    env_file: ./server/.env
+    environment:
+      STORAGE_NODE_PORT: 4001
+      STORAGE_DATA_DIR: /data
+    volumes:
+      - storage-node-3-data:/data
+
+volumes:
+  postgres-data:
+  storage-node-1-data:
+  storage-node-2-data:
+  storage-node-3-data:
