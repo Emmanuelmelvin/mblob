@@ -5,8 +5,6 @@ services:
       POSTGRES_USER: mblob
       POSTGRES_PASSWORD: mblob
       POSTGRES_DB: mblob
-    ports:
-      - "5432:5432"
     volumes:
       - postgres-data:/var/lib/postgresql/data
     healthcheck:
@@ -21,8 +19,8 @@ services:
     environment:
       DATABASE_URL: postgres://mblob:mblob@postgres:5432/mblob
       STORAGE_NODE_URLS: http://storage-node-1:4001,http://storage-node-2:4002,http://storage-node-3:4003
-    ports:
-      - "3000:3000"
+    expose:
+      - "3000"
     depends_on:
       postgres:
         condition: service_healthy
@@ -31,6 +29,14 @@ services:
       storage-node-2:
         condition: service_started
       storage-node-3:
+        condition: service_started
+
+  client:
+    build: ./client
+    ports:
+      - "8080:80"
+    depends_on:
+      gateway:
         condition: service_started
 
   storage-node-1:

@@ -5,7 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "npm exec -- tsx watch src/index.ts",
-    "build": "npm exec -- tsc -p tsconfig.json",
+    "dev:client": "cd ../client && npx --yes vite",
+    "build": "cd ../client && npx --yes vite build && cd ../server && npm exec -- tsc -p tsconfig.json",
+    "build:client": "cd ../client && npx --yes vite build",
     "start": "node dist/index.js",
     "start:storage-node": "node dist/storage-node.js",
     "typecheck": "npm exec -- tsc --noEmit"
