@@ -16,7 +16,7 @@ const features = [
     {
         icon: UploadIcon,
         title: 'Replicated Storage',
-        description: 'Encrypted shards are distributed across three independent nodes for availability and redundancy.',
+        description: 'Full encrypted replicas are distributed across three independent nodes for availability and redundancy.',
     },
 ]
 
@@ -64,8 +64,8 @@ export function Home() {
                     {[
                         ['Select & Pay', 'Choose a file. The client calculates the exact cost using the same on-chain pricing formula. You pay and create a pending blob record.'],
                         ['Upload', 'Sign an authorization message and send the file to the gateway. The backend verifies your payment and ownership.'],
-                        ['Encrypt & Replicate', 'The gateway encrypts your file, splits it, and distributes shards across three storage nodes. Only then is the blob activated on-chain.'],
-                        ['Retrieve', 'At any time before expiration, request your blob. The gateway fetches shards, reassembles, and decrypts the original file.'],
+                        ['Encrypt & Replicate', 'The gateway encrypts your file and replicates the full ciphertext across three storage nodes. Only then is the blob activated on-chain.'],
+                        ['Retrieve', 'At any time before expiration, request your blob. The gateway fetches an encrypted replica, decrypts it, verifies integrity, and returns the original file.'],
                     ].map(([step, detail], i) => (
                         <li key={i} className="p-6 flex flex-col">
                             <span className="text-xs font-mono text-neutral-400 mb-1">0{i + 1}</span>

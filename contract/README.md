@@ -1,6 +1,6 @@
 # Mblob contract
 
-`MblobRegistry` is the on-chain source of truth for storage pricing, payment, and blob metadata. It never stores file content, encryption keys, node URLs, or shard bytes.
+`MblobRegistry` is the on-chain source of truth for storage pricing, payment, and blob metadata. It never stores file content, encryption keys, node URLs, or encrypted file bytes.
 
 ## MVP contract flow
 
@@ -8,7 +8,7 @@
 2. The client calls `createBlob(...)` and pays the exact native MON amount.
 3. The gateway uploads encrypted data to storage nodes.
 4. Once every node returns a receipt, the gateway calls `activateBlob(blobId, storageNodesCommitment)`.
-5. At expiry, the cleanup worker deletes the shards and calls `markDeleted(blobId)`.
+5. At expiry, the cleanup worker deletes the replicas and calls `markDeleted(blobId)`.
 
 ## Important choices
 
