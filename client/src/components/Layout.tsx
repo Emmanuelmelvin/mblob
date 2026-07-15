@@ -1,12 +1,13 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'wouter'
-import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon } from '@radix-ui/react-icons'
+import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon, ArchiveIcon } from '@radix-ui/react-icons'
 import { useWallet } from '../lib/wallet'
 
 const navItems = [
     { href: '/', label: 'Home', icon: HomeIcon },
     { href: '/upload', label: 'Upload', icon: UploadIcon },
     { href: '/retrieve', label: 'Retrieve', icon: DownloadIcon },
+    { href: '/my-blobs', label: 'My Blobs', icon: ArchiveIcon },
     { href: '/docs', label: 'Docs', icon: ReaderIcon },
 ] as const
 

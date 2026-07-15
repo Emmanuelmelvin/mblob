@@ -17,6 +17,23 @@ export const registryAbi = [
 
 export const publicClient = createPublicClient({ chain: monadTestnet, transport: http(CONTRACT.RPC_URL) })
 
+
+export type BlobInfo = { blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; createTxHash: string | null; activateTxHash: string | null }
+export type OwnedBlob = BlobInfo & { contentType: string; contentLength: number; nodeUrls: string[] }
+export type OnChainBlobMetadata = {
+    owner: string
+    fileHash: string
+    encryptionMetadataHash: string
+    storageNodesCommitment: string
+    fileSizeBytes: string
+    createdAt: string
+    expiresAt: string
+    replicationFactor: number
+    deletable: boolean
+    status: number
+    payment: string
+}
+
 export const bytes32Hash = async (file: File): Promise<Hex> => {
     const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
     return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
@@ -67,7 +84,36 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
 export async function getBlob(blobId: string) {
     const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}`)
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
-    return response.json() as Promise<{ blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; createTxHash: string | null; activateTxHash: string | null }>
+    return response.json() as Promise<BlobInfo>
+}
+
+export async function getWalletBlobs(address: Address) {
+    const response = await fetch(`${GATEWAY.BASE_URL}/v1/wallets/${address}/blobs`)
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve wallet blobs')
+    return response.json() as Promise<{ owner: string; blobs: OwnedBlob[] }>
+}
+
+export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlobMetadata> {
+    if (!/^\d+$/.test(blobId)) throw new Error('On-chain metadata requires the numeric blob ID.')
+    const blob = await publicClient.readContract({
+        address: CONTRACT.REGISTRY_ADDRESS,
+        abi: registryAbi,
+        functionName: 'getBlob',
+        args: [BigInt(blobId)],
+    })
+    return {
+        owner: blob.owner,
+        fileHash: blob.fileHash,
+        encryptionMetadataHash: blob.encryptionMetadataHash,
+        storageNodesCommitment: blob.storageNodesCommitment,
+        fileSizeBytes: blob.fileSizeBytes.toString(),
+        createdAt: blob.createdAt.toString(),
+        expiresAt: blob.expiresAt.toString(),
+        replicationFactor: blob.replicationFactor,
+        deletable: blob.deletable,
+        status: blob.status,
+        payment: blob.payment.toString(),
+    }
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {

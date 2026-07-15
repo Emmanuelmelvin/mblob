@@ -109,7 +109,7 @@ contract MblobRegistry {
     }
 
     /// @notice Creates a pending metadata record after the user pays on-chain.
-    /// @dev The gateway must later activate the record after all shard uploads succeed.
+    /// @dev The gateway must later activate the record after all replica uploads succeed.
     function createBlob(
         bytes32 fileHash,
         bytes32 encryptionMetadataHash,
@@ -141,7 +141,7 @@ contract MblobRegistry {
     }
 
     /// @notice Confirms that storage nodes accepted the encrypted payload.
-    /// @param storageNodesCommitment Hash of the ordered node IDs and shard receipts kept off-chain.
+    /// @param storageNodesCommitment Hash of ordered node IDs and ciphertext commitment data kept off-chain.
     function activateBlob(uint256 blobId, bytes32 storageNodesCommitment) external onlyGateway {
         Blob storage blob = _blob(blobId);
         if (blob.status != BlobStatus.Pending) revert InvalidStatus(BlobStatus.Pending, blob.status);
@@ -152,7 +152,7 @@ contract MblobRegistry {
         emit BlobActivated(blobId, storageNodesCommitment);
     }
 
-    /// @notice Marks an expired deletable blob as deleted after the worker removes its shards.
+    /// @notice Marks an expired deletable blob as deleted after the worker removes its replicas.
     function markDeleted(uint256 blobId) external onlyGateway {
         Blob storage blob = _blob(blobId);
         if (!blob.deletable || blob.expiresAt == 0 || block.timestamp < blob.expiresAt) {
