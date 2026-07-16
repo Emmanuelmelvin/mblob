@@ -35,6 +35,7 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
   let stage = 'authenticate request'
   try {
     const owner = await verifyRequestSignature(c.req.raw.headers, 'upload', blobId)
+    const createTxHash = c.req.header('x-create-tx-hash') ?? null
     stage = 'verify on-chain ownership'
     const chainBlob = await assertBlobOwner(BigInt(blobId), owner, 0)
     stage = 'parse uploaded file'
@@ -67,7 +68,8 @@ app.post('/v1/blobs/:blobId/upload', async (c) => {
       contentType: file.type || 'application/octet-stream',
       contentLength: plaintext.length,
       nodeUrls: replicated.nodeUrls,
-      transactionHash
+      createTxHash,
+      activateTxHash: transactionHash
     })
 
     logger.info({ blobId, publicId, transactionHash, replicas: replicated.nodeUrls.length }, 'Blob uploaded and activated')
@@ -94,7 +96,8 @@ app.get('/v1/blobs/:blobId', async (c) => {
       status: blob.status,
       fileHash: blob.fileHash,
       stored: Boolean(stored),
-      transactionHash: stored?.transactionHash ?? null
+      createTxHash: stored?.createTxHash ?? null,
+      activateTxHash: stored?.activateTxHash ?? null
     })
   } catch (error) {
     logger.warn({ ...errorContext(error), blobReference, stage }, 'Blob lookup failed')
