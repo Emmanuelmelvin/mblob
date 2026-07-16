@@ -20,9 +20,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
     return (
         <div className="min-h-screen bg-white text-black flex flex-col">
             <header className="border-b border-black">
-                <div className="max-w-5xl mx-auto px-6 h-16 flex items-center justify-between">
+                <div className="max-w-5xl mx-auto px-6 h-20 flex items-center justify-between">
                     <Link href="/" className="flex items-center gap-2 no-underline text-black" aria-label="Mblob home">
-                        <img src="/mblob.png" alt="Mblob" className="h-9 w-9 rounded-lg object-cover" />
+                        <img src="/mblob.png" alt="Mblob" className="h-14 w-14 rounded-lg object-cover" />
                         <span className="text-lg font-semibold tracking-tight">mblob</span>
                     </Link>
 

@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { ChevronDownIcon, ChevronRightIcon, DownloadIcon, ExternalLinkIcon, ReaderIcon } from '@radix-ui/react-icons'
+import { ChevronDownIcon, ChevronRightIcon, CopyIcon, DownloadIcon, ExternalLinkIcon, ReaderIcon } from '@radix-ui/react-icons'
 import { downloadBlob, getOnChainBlobMetadata, getWalletBlobs, type OnChainBlobMetadata, type OwnedBlob } from '../lib/mblob'
 import { useWallet } from '../lib/wallet'
 import { formatBytes } from '../lib/utils'
@@ -73,13 +73,16 @@ export function MyBlobs() {
                 const isOpen = expanded === blob.blobId
                 return <div key={blob.blobId} className="border border-black">
                     <div className="p-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-                        <button onClick={() => setExpanded(isOpen ? null : blob.blobId)} className="flex items-start gap-2 text-left min-w-0">
-                            <span className="mt-0.5">{isOpen ? <ChevronDownIcon /> : <ChevronRightIcon />}</span>
-                            <span className="min-w-0">
-                                <span className="block text-sm font-semibold">Blob #{blob.blobId}</span>
-                                <span className="block text-xs font-mono text-neutral-500 break-all">{displayId}</span>
-                            </span>
-                        </button>
+                        <div className="flex items-start gap-2 min-w-0">
+                            <button onClick={() => setExpanded(isOpen ? null : blob.blobId)} className="flex items-start gap-2 text-left min-w-0">
+                                <span className="mt-0.5">{isOpen ? <ChevronDownIcon /> : <ChevronRightIcon />}</span>
+                                <span className="min-w-0">
+                                    <span className="block text-sm font-semibold">Blob #{blob.blobId}</span>
+                                    <span className="block text-xs font-mono text-neutral-500 break-all">{displayId}</span>
+                                </span>
+                            </button>
+                            <CopyBlobId value={displayId} />
+                        </div>
                         <div className="flex flex-wrap gap-2">
                             <a href={`${CONTRACT.EXPLORER_URL}/tx/${blob.createTxHash ?? blob.activateTxHash ?? ''}`} target="_blank" rel="noopener noreferrer" className="border border-black px-3 py-2 text-xs hover:bg-neutral-100 flex items-center gap-1"><ExternalLinkIcon />Explorer</a>
                             <button onClick={() => void showOnChain(blob.blobId)} className="border border-black px-3 py-2 text-xs hover:bg-neutral-100 flex items-center gap-1"><ReaderIcon />View on-chain metadata</button>
@@ -101,6 +104,20 @@ export function MyBlobs() {
         </div>
         {metadata && <OnChainMetadataModal metadata={metadata} onClose={() => setMetadata(null)} />}
     </div>
+}
+
+function CopyBlobId({ value }: { value: string }) {
+    const [copied, setCopied] = useState(false)
+
+    async function copy() {
+        await navigator.clipboard.writeText(value)
+        setCopied(true)
+        window.setTimeout(() => setCopied(false), 1500)
+    }
+
+    return <button onClick={() => void copy()} aria-label="Copy blob ID" title="Copy blob ID" className="mt-0.5 shrink-0 text-neutral-400 hover:text-black transition-colors">
+        {copied ? <span className="text-xs text-black">Copied</span> : <CopyIcon className="w-4 h-4" />}
+    </button>
 }
 
 function Info({ label, value }: { label: string; value: string }) {

@@ -60,7 +60,7 @@ export function Upload() {
 
         {step === 'paying' && <Status message="Confirm the payment in your wallet, then wait for Monad to confirm the transaction." />}
         {step === 'uploading' && <Status message="Sign the upload authorization in your wallet. The gateway is encrypting and replicating your file." />}
-        {step === 'done' && blobId && <div className="border border-black p-6 space-y-4"><div className="flex items-center gap-3"><CheckIcon className="w-5 h-5" /><p className="text-sm font-medium">Blob uploaded and activated</p></div><div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">BLOB ID — save this value</p><Copiable value={publicId!} /></div>{transactionHash && <div className="border border-black p-3 bg-neutral-50"><p className="text-xs text-neutral-400 mb-1">TRANSACTION HASH</p><TransactionHash value={transactionHash} /></div>}<button onClick={() => { setFile(null); setBlobId(null); setPublicId(null); setTransactionHash(null); setStep('select') }} className="w-full px-4 py-3 border border-black text-sm font-medium hover:bg-neutral-100">Upload another file</button></div>}
+        {step === 'done' && blobId && <div className="border border-black p-6 space-y-4 overflow-hidden"><div className="flex items-center gap-3"><CheckIcon className="w-5 h-5 shrink-0" /><p className="text-sm font-medium">Blob uploaded and activated</p></div><div className="border border-black p-3 bg-neutral-50 min-w-0"><p className="text-xs text-neutral-400 mb-1">BLOB ID — save this value</p><Copiable value={publicId ?? blobId} /></div>{transactionHash && <div className="border border-black p-3 bg-neutral-50 min-w-0"><p className="text-xs text-neutral-400 mb-1">TRANSACTION HASH</p><TransactionHash value={transactionHash} /></div>}<button onClick={() => { setFile(null); setBlobId(null); setPublicId(null); setTransactionHash(null); setStep('select') }} className="w-full px-4 py-3 border border-black text-sm font-medium hover:bg-neutral-100">Upload another file</button></div>}
         {step === 'error' && <div className="border border-red-800 p-6 bg-red-50"><p className="text-sm font-medium text-red-800">Upload failed</p><p className="mt-1 text-xs text-red-700">{error}</p><button onClick={() => setStep('select')} className="mt-4 px-4 py-2 border border-red-800 text-sm text-red-800">Try again</button></div>}
     </div>
 }
@@ -76,12 +76,12 @@ function Copiable({ value }: { value: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
     }
-    return <div className="flex items-start gap-2"><div className="flex-1 min-w-0 truncate text-sm font-mono">{value}</div><button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
+    return <div className="flex items-center gap-2 min-w-0"><div className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-mono">{value}</div><button onClick={copy} aria-label="Copy" className="shrink-0 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button></div>
 }
 
 function TransactionHash({ value }: { value: string }) {
     const explorerUrl = `${CONTRACT.EXPLORER_URL}/tx/${value}`
-    return <div className="flex items-start gap-2"><div className="flex-1 min-w-0 truncate text-sm font-mono">{value}</div><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><CopiableButton value={value} /></div>
+    return <div className="flex items-center gap-2 min-w-0"><div className="flex-1 min-w-0 overflow-hidden text-ellipsis whitespace-nowrap text-sm font-mono">{value}</div><a href={explorerUrl} target="_blank" rel="noopener noreferrer" aria-label="View on Monad explorer" className="shrink-0 text-neutral-400 hover:text-black transition-colors"><ExternalLinkIcon className="w-4 h-4" /></a><CopiableButton value={value} /></div>
 }
 
 function CopiableButton({ value }: { value: string }) {
@@ -91,5 +91,5 @@ function CopiableButton({ value }: { value: string }) {
         setCopied(true)
         setTimeout(() => setCopied(false), 1500)
     }
-    return <button onClick={copy} aria-label="Copy" className="shrink-0 mt-0.5 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button>
+    return <button onClick={copy} aria-label="Copy" className="shrink-0 text-neutral-400 hover:text-black transition-colors">{copied ? <span className="text-xs">Copied</span> : <CopyIcon className="w-4 h-4" />}</button>
 }

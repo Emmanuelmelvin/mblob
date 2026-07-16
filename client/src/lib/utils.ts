@@ -9,6 +9,18 @@ export function formatBytes(bytes: number): string {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(1)) + ' ' + sizes[i]
 }
 
+/** Format a Unix timestamp (in seconds) into a readable local date and time. */
+export function formatUnixTimestamp(timestamp: string | number | bigint): string {
+    try {
+        const milliseconds = Number(BigInt(timestamp) * 1000n)
+        const date = new Date(milliseconds)
+        if (!Number.isFinite(milliseconds) || Number.isNaN(date.getTime())) return 'Invalid date'
+        return new Intl.DateTimeFormat(undefined, { dateStyle: 'medium', timeStyle: 'short' }).format(date)
+    } catch {
+        return 'Invalid date'
+    }
+}
+
 /**
  * Format wei into MON with up to 6 decimal places.
  */
