@@ -97,6 +97,26 @@ export async function getStoredBlob(blobId: string): Promise<StoredBlob | undefi
   }
 }
 
+export async function getStoredBlobsByOwner(owner: string): Promise<StoredBlob[]> {
+  const rows = await sql<{
+    blob_id: string
+    public_id: string
+    owner: string
+    file_hash: string
+    wrapped_data_key: string
+    content_type: string
+    content_length: number
+    node_urls: string[]
+    create_tx_hash: string | null
+    activate_tx_hash: string | null
+  }[]>`
+    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, content_length, node_urls, create_tx_hash, activate_tx_hash
+    FROM stored_blobs WHERE lower(owner) = lower(${owner})
+    ORDER BY blob_id::numeric DESC
+  `
+  return rows.map((row) => ({ blobId: row.blob_id, publicId: row.public_id, owner: row.owner, fileHash: row.file_hash, wrappedDataKey: row.wrapped_data_key, contentType: row.content_type, contentLength: row.content_length, nodeUrls: row.node_urls, createTxHash: row.create_tx_hash, activateTxHash: row.activate_tx_hash }))
+}
+
 export async function getStoredBlobByPublicId(publicId: string): Promise<StoredBlob | undefined> {
   const rows = await sql<{
     blob_id: string

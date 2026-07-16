@@ -12,7 +12,7 @@ Centralized cloud storage has a single point of failure. Providers control your 
 
 - **On-chain payments** — Users pay exactly what the contract quotes. No hidden fees, no subscriptions.
 - **Client-side encryption** — Files are SHA-256 hashed on the browser before upload. The gateway encrypts them with AES-256-GCM before they reach storage nodes.
-- **Distributed replication** — Encrypted shards are spread across three independent storage nodes. No single node can read the file.
+- **Distributed replication** — Full encrypted replicas are stored across three independent storage nodes for redundancy. Storage nodes receive ciphertext only and cannot read the original file.
 - **On-chain verification** — The file hash, owner, and storage commitment are recorded immutably on the Monad blockchain. Anyone can verify the file's integrity by comparing the on-chain hash with a locally computed one.
 - **Transparent pipeline** — Every step from payment to retrieval is auditable via transaction hashes on the Monad explorer.
 

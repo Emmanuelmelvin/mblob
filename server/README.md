@@ -37,4 +37,4 @@ Use `download` in place of `upload` for retrieval and metadata requests. Each no
 - `GET /v1/blobs/:blobId/download` — signed file retrieval.
 - `GET /health` — gateway health check.
 
-The server replicates full ciphertext to three nodes for the MVP. Erasure-coded shards can replace replication later without changing the on-chain contract interface.
+The server replicates full ciphertext to three nodes for the MVP. Erasure-coded storage can replace full-ciphertext replication later without changing the on-chain contract interface.

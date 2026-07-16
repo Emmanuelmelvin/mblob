@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { assertBlobOwner, activateBlob, getChainBlob } from './chain.js'
 import { config } from './config.js'
 import { decryptFromStorage, encryptForStorage, sha256Hex } from './crypto.js'
-import { getStoredBlob, getStoredBlobByPublicId, initializeDatabase, saveBlob } from './database.js'
+import { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, initializeDatabase, saveBlob } from './database.js'
 import { verifyRequestSignature } from './auth.js'
 import { replicate, retrieve } from './storage.js'
 
@@ -99,6 +99,35 @@ app.get('/v1/blobs/:blobId', async (c) => {
   } catch (error) {
     logger.warn({ ...errorContext(error), blobReference, stage }, 'Blob lookup failed')
     return c.json({ error: error instanceof Error ? error.message : 'Unable to read blob' }, 400)
+  }
+})
+
+
+app.get('/v1/wallets/:address/blobs', async (c) => {
+  const owner = c.req.param('address')
+  let stage = 'read stored blobs by owner'
+  try {
+    const storedBlobs = await getStoredBlobsByOwner(owner)
+    const blobs = await Promise.all(storedBlobs.map(async (stored) => {
+      const chainBlob = await getChainBlob(BigInt(stored.blobId))
+      return {
+        blobId: stored.blobId,
+        publicId: stored.publicId,
+        owner: chainBlob.owner,
+        status: chainBlob.status,
+        fileHash: chainBlob.fileHash,
+        stored: true,
+        contentType: stored.contentType,
+        contentLength: stored.contentLength,
+        nodeUrls: stored.nodeUrls,
+        createTxHash: stored.createTxHash,
+        activateTxHash: stored.activateTxHash
+      }
+    }))
+    return c.json({ owner, blobs })
+  } catch (error) {
+    logger.warn({ ...errorContext(error), owner, stage }, 'Wallet blob lookup failed')
+    return c.json({ error: error instanceof Error ? error.message : 'Unable to read wallet blobs' }, 400)
   }
 })
 
