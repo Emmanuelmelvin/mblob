@@ -12,7 +12,6 @@ services:
       interval: 5s
       timeout: 5s
       retries: 10
-
   gateway:
     build: ./server
     env_file: ./server/.env
@@ -30,7 +29,6 @@ services:
         condition: service_started
       storage-node-3:
         condition: service_started
-
   client:
     build: ./client
     ports:
@@ -38,7 +36,9 @@ services:
     depends_on:
       gateway:
         condition: service_started
-
+    networks:
+      - default
+      - aeroplane-runtime-KLtrUY1YZb
   storage-node-1:
     build: ./server
     command: node dist/storage-node.js
@@ -48,7 +48,6 @@ services:
       STORAGE_DATA_DIR: /data
     volumes:
       - storage-node-1-data:/data
-
   storage-node-2:
     build: ./server
     command: node dist/storage-node.js
@@ -58,7 +57,6 @@ services:
       STORAGE_DATA_DIR: /data
     volumes:
       - storage-node-2-data:/data
-
   storage-node-3:
     build: ./server
     command: node dist/storage-node.js
@@ -74,3 +72,9 @@ volumes:
   storage-node-1-data:
   storage-node-2-data:
   storage-node-3-data:
+
+networks:
+  default:
+    name: mblob_default
+  aeroplane-runtime-KLtrUY1YZb:
+    external: true
