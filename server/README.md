@@ -32,7 +32,7 @@ Use `download` in place of `upload` for retrieval and metadata requests. Each no
 
 ## Endpoints
 
-- `POST /v1/blobs/:blobId/upload` — signed multipart request with a `file` field.
+- `POST /v1/blobs/:blobId/upload` — signed raw file-body request with `content-type` and `x-file-name` headers.
 - `GET /v1/blobs/:blobId` — signed metadata request.
 - `GET /v1/blobs/:blobId/download` — signed file retrieval.
 - `GET /health` — gateway health check.
