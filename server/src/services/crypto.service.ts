@@ -1,1 +1,1 @@
-export { decryptFromStorage, encryptForStorage, sha256Hex } from '../crypto.js'
+export { decryptFromStorage, encryptForStorage, fileContentHashes, matchesFileHash, sha256Hex } from '../crypto.js'

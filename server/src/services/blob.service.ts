@@ -4,7 +4,7 @@ import { config } from '../config.js'
 import { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '../repositories/blob.repository.js'
 import { verifyRequestSignature } from './auth.service.js'
 import { activateBlob, assertBlobOwner, getChainBlob } from './chain.service.js'
-import { decryptFromStorage, encryptForStorage, sha256Hex } from './crypto.service.js'
+import { decryptFromStorage, encryptForStorage, fileContentHashes, matchesFileHash } from './crypto.service.js'
 import { replicate, retrieve } from './storage.service.js'
 import { notFound } from '../utils/errors.js'
 
@@ -20,9 +20,9 @@ export async function uploadBlob(input: { blobId: string; headers: Headers; file
   const owner = await verifyRequestSignature(input.headers, 'upload', input.blobId)
   const chainBlob = await assertBlobOwner(BigInt(input.blobId), owner, 0)
   const plaintext = Buffer.from(await input.file.arrayBuffer())
-  const fileHash = sha256Hex(plaintext)
+  const fileHashes = fileContentHashes(plaintext)
 
-  if (fileHash.toLowerCase() !== chainBlob.fileHash.toLowerCase()) {
+  if (!Object.values(fileHashes).some((hash) => hash.toLowerCase() === chainBlob.fileHash.toLowerCase())) {
     throw new Error('File hash does not match the on-chain blob record')
   }
 
@@ -36,7 +36,7 @@ export async function uploadBlob(input: { blobId: string; headers: Headers; file
     blobId: input.blobId,
     publicId,
     owner,
-    fileHash,
+    fileHash: chainBlob.fileHash,
     wrappedDataKey: encrypted.wrappedDataKey,
     contentType: input.file.type || 'application/octet-stream',
     contentLength: plaintext.length,
@@ -97,7 +97,7 @@ export async function downloadBlob(input: { reference: string; headers: Headers 
   // Try available replicas before decrypting and re-checking the original file hash.
   const ciphertext = await retrieve(blobId, stored.nodeUrls)
   const plaintext = decryptFromStorage(ciphertext, stored.wrappedDataKey, config.encryptionKey)
-  if (sha256Hex(plaintext).toLowerCase() !== stored.fileHash.toLowerCase()) {
+  if (!matchesFileHash(plaintext, stored.fileHash)) {
     throw new Error('Retrieved file integrity check failed')
   }
 

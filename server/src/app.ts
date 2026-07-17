@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 
+import { accessLogMiddleware } from './middlewares/access.middleware.js'
 import { apiCors } from './middlewares/cors.middleware.js'
 import { errorMiddleware } from './middlewares/error.middleware.js'
 import { blobRoutes, gatewayHealthRoutes, walletRoutes } from './routes/index.js'
@@ -9,6 +10,7 @@ export function createApp() {
   const app = new Hono()
 
   app.onError(errorMiddleware)
+  app.use('*', accessLogMiddleware)
   app.use('/v1/*', apiCors)
   app.route('/', gatewayHealthRoutes)
   app.route('/v1/blobs', blobRoutes)
