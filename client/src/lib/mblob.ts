@@ -74,9 +74,11 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     headers.set('x-mblob-nonce', nonce)
     headers.set('x-create-tx-hash', createTxHash)
     headers.set('x-file-name', encodeURIComponent(file.name))
-    headers.set('content-type', file.type || 'application/octet-stream')
 
-    const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
+    // Keep using the bytes captured before wallet signing. Some mobile browsers/wallets
+    // can lose access to the original File handle after the transaction/signature flow.
+    const uploadBody = new FormData()
+    uploadBody.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
     const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body: uploadBody, headers })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
     const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
