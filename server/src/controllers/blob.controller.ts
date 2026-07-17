@@ -6,8 +6,9 @@ import { parseBlobId, parseBlobReference, parseUploadFile } from '../validators/
 
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
-  const form = await c.req.parseBody()
-  const file = await parseUploadFile(form)
+  const body = await c.req.arrayBuffer()
+  const fileName = decodeURIComponent(c.req.header('x-file-name') ?? `mblob-${blobId}`)
+  const file = parseUploadFile(new File([body], fileName, { type: c.req.header('content-type') ?? 'application/octet-stream' }))
   const result = await uploadBlob({
     blobId,
     headers: c.req.raw.headers,

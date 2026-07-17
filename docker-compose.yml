@@ -19,7 +19,7 @@ services:
       DATABASE_URL: postgres://mblob:mblob@postgres:5432/mblob
       STORAGE_NODE_URLS: http://storage-node-1:4001,http://storage-node-2:4002,http://storage-node-3:4003
     expose:
-      - "3000"
+      - "5000"
     depends_on:
       postgres:
         condition: service_healthy
