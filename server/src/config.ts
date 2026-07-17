@@ -3,7 +3,7 @@ import 'dotenv/config'
 import { z } from 'zod'
 
 const envSchema = z.object({
-  PORT: z.coerce.number().int().positive().default(3000),
+  PORT: z.coerce.number().int().positive().default(5000),
   DATABASE_URL: z.string().url(),
   MONAD_RPC_URL: z.string().url(),
   MONAD_EXPLORER_URL: z.string().url().default('https://testnet.monadexplorer.com'),

@@ -8,7 +8,7 @@ The gateway verifies a wallet signature and on-chain blob owner, encrypts the up
 2. Run `npm install`.
 3. Run `docker compose up --build` from the repository root.
 
-The gateway is available at `http://localhost:3000`; storage nodes are internal Docker services.
+The gateway is available at `http://localhost:5000`; storage nodes are internal Docker services.
 
 ## Wallet signature format
 
