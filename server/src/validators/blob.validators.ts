@@ -29,9 +29,7 @@ export function parseWalletAddress(address: string | undefined) {
   return parsed.data
 }
 
-export async function parseUploadFile(form: Record<string, unknown>) {
-  const file = form.file
-  if (!(file instanceof File)) throw badRequest('Attach the file as multipart field "file"')
+export function parseUploadFile(file: File) {
   if (file.size === 0 || file.size > config.MAX_UPLOAD_BYTES) throw badRequest('Invalid file size')
   return file
 }

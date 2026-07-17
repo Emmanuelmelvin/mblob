@@ -64,9 +64,6 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
 
-    const body = new FormData()
-    body.set('file', file)
-
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage('upload', blobId.toString(), nonce) })
     const headers = new Headers()
@@ -74,8 +71,10 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     headers.set('x-mblob-signature', signature)
     headers.set('x-mblob-nonce', nonce)
     headers.set('x-create-tx-hash', createTxHash)
+    headers.set('x-file-name', encodeURIComponent(file.name))
+    headers.set('content-type', file.type || 'application/octet-stream')
 
-    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body, headers })
+    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body: file, headers })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
     const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
     return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
