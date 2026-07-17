@@ -5,30 +5,10 @@ import { badRequest } from '../utils/errors.js'
 import { logger } from '../utils/logger.js'
 import { parseBlobId, parseBlobReference, parseUploadFile, parseUploadFormFile } from '../validators/blob.validators.js'
 
-async function parseMultipartUploadFile(c: Context) {
-  try {
-    const form = await c.req.formData()
-    return parseUploadFormFile(form.get('file'))
-  } catch {
-    throw badRequest('Invalid multipart form-data upload')
-  }
-}
-
-async function parseRawUploadFile(c: Context, blobId: string) {
-  const body = await c.req.arrayBuffer()
-  const fileName = decodeURIComponent(c.req.header('x-file-name') ?? `mblob-${blobId}`)
-  return new File([body], fileName, { type: c.req.header('content-type') ?? 'application/octet-stream' })
-}
-
-async function parseUploadRequestFile(c: Context, blobId: string) {
-  const contentType = c.req.header('content-type')?.toLowerCase() ?? ''
-  if (contentType.includes('multipart/form-data')) return parseMultipartUploadFile(c)
-  return parseRawUploadFile(c, blobId)
-}
-
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
-  const file = parseUploadFile(await parseUploadRequestFile(c, blobId))
+  const form = await c.req.formData()
+  const file = parseUploadFile(parseUploadFormFile(form.get('file')))
   const result = await uploadBlob({
     blobId,
     headers: c.req.raw.headers,
