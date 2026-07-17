@@ -34,8 +34,9 @@ export type OnChainBlobMetadata = {
     payment: string
 }
 
-export const bytes32Hash = async (file: File): Promise<Hex> => {
-    const digest = await crypto.subtle.digest('SHA-256', await file.arrayBuffer())
+export const bytes32Hash = async (file: File | ArrayBuffer): Promise<Hex> => {
+    const bytes = file instanceof File ? await file.arrayBuffer() : file
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
     return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
 }
 
@@ -53,7 +54,8 @@ async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof impor
 }
 
 export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, file: File) {
-    const fileHash = await bytes32Hash(file)
+    const fileBytes = await file.arrayBuffer()
+    const fileHash = await bytes32Hash(fileBytes)
     const quote = await publicClient.readContract({
         address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'quote', args: [BigInt(file.size), 24n, 3, false],
         authorizationList: undefined
@@ -74,7 +76,8 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     headers.set('x-file-name', encodeURIComponent(file.name))
     headers.set('content-type', file.type || 'application/octet-stream')
 
-    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body: file, headers })
+    const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
+    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body: uploadBody, headers })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
     const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
     return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
