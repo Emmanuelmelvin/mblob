@@ -1,10 +1,27 @@
 import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
+import { keccak256, toHex } from 'viem'
 
 const IV_LENGTH = 12
 const AUTH_TAG_LENGTH = 16
 
 export function sha256Hex(input: Buffer): `0x${string}` {
   return `0x${createHash('sha256').update(input).digest('hex')}`
+}
+
+export function keccak256Hex(input: Buffer): `0x${string}` {
+  return keccak256(toHex(input))
+}
+
+export function fileContentHashes(input: Buffer) {
+  return {
+    sha256: sha256Hex(input),
+    keccak256: keccak256Hex(input)
+  }
+}
+
+export function matchesFileHash(input: Buffer, expectedHash: string) {
+  const normalizedExpected = expectedHash.toLowerCase()
+  return Object.values(fileContentHashes(input)).some((hash) => hash.toLowerCase() === normalizedExpected)
 }
 
 function seal(plaintext: Buffer, key: Buffer): Buffer {
