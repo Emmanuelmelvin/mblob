@@ -1,7 +1,7 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { config } from '../config.js'
+import { config } from '../utils/config.js'
 import { notFound } from '../utils/errors.js'
 
 function blobPath(blobId: string) {

@@ -1,1 +1,1 @@
-export { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob, type StoredBlob } from '../database.js'
+export { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob, type StoredBlob } from './database.js'

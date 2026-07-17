@@ -1,6 +1,6 @@
 import { createMiddleware } from 'hono/factory'
 
-import { config } from '../config.js'
+import { config } from '../utils/config.js'
 import { unauthorized } from '../utils/errors.js'
 
 export const requireStorageToken = createMiddleware(async (c, next) => {

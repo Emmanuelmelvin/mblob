@@ -1,6 +1,6 @@
 import { randomUUID } from 'node:crypto'
 
-import { config } from '../config.js'
+import { config } from '../utils/config.js'
 import { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '../repositories/blob.repository.js'
 import { verifyRequestSignature } from './auth.service.js'
 import { activateBlob, assertBlobOwner, getChainBlob } from './chain.service.js'
