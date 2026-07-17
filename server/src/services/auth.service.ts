@@ -1,6 +1,6 @@
 import { isAddress, verifyMessage, type Address, type Hex } from 'viem'
 
-import { reserveNonce } from '../repositories/database.js'
+import { reserveNonce } from '@/repositories/database'
 
 const messageFor = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
   `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`

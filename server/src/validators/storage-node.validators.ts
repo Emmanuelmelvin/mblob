@@ -1,5 +1,5 @@
-import { parseBlobId } from './blob.validators.js'
-import { badRequest } from '../utils/errors.js'
+import { parseBlobId } from '@/validators/blob.validators'
+import { badRequest } from '@/utils/errors'
 
 export const parseStorageBlobId = parseBlobId
 

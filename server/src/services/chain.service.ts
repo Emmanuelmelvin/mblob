@@ -1,8 +1,8 @@
 import { createPublicClient, createWalletClient, defineChain, http, isAddress, type Address, type Hex } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
-import { mblobRegistryAbi } from '../abi/mblob-registry.js'
-import { config } from '../utils/config.js'
+import { mblobRegistryAbi } from '@/abi/mblob-registry'
+import { config } from '@/utils/config'
 
 type ChainBlob = {
   owner: Address

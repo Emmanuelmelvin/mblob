@@ -1,6 +1,7 @@
-import { sha256Hex } from './crypto.service.js'
+import axios from 'axios'
 
-import { config } from '../utils/config.js'
+import { sha256Hex } from '@/services/crypto.service'
+import { config } from '@/utils/config'
 
 function headers() {
   return { 'x-storage-token': config.STORAGE_NODE_TOKEN }
@@ -9,13 +10,12 @@ function headers() {
 export async function replicate(blobId: string, ciphertext: Buffer) {
   const outcomes = await Promise.all(
     config.storageNodeUrls.map(async (nodeUrl) => {
-      const response = await fetch(`${nodeUrl}/internal/blobs/${blobId}`, {
-        method: 'PUT',
+      const response = await axios.put(`${nodeUrl}/internal/blobs/${blobId}`, new Uint8Array(ciphertext), {
         headers: { ...headers(), 'content-type': 'application/octet-stream' },
-        body: new Uint8Array(ciphertext)
+        validateStatus: () => true
       })
-      if (!response.ok) {
-        const detail = (await response.text()).trim()
+      if (response.status < 200 || response.status >= 300) {
+        const detail = (response.data as string)?.trim() ?? ''
         throw new Error(`Storage node ${nodeUrl} returned ${response.status}${detail ? `: ${detail}` : ''}`)
       }
       return nodeUrl
@@ -30,9 +30,13 @@ export async function replicate(blobId: string, ciphertext: Buffer) {
 export async function retrieve(blobId: string, nodeUrls: string[]) {
   for (const nodeUrl of nodeUrls) {
     try {
-      const response = await fetch(`${nodeUrl}/internal/blobs/${blobId}`, { headers: headers() })
-      if (!response.ok) continue
-      return Buffer.from(await response.arrayBuffer())
+      const response = await axios.get(`${nodeUrl}/internal/blobs/${blobId}`, {
+        headers: headers(),
+        responseType: 'arraybuffer',
+        validateStatus: () => true
+      })
+      if (response.status < 200 || response.status >= 300) continue
+      return Buffer.from(response.data as ArrayBuffer)
     } catch {
       // Try the next replica.
     }
@@ -42,6 +46,6 @@ export async function retrieve(blobId: string, nodeUrls: string[]) {
 
 export async function deleteReplicas(blobId: string, nodeUrls: string[]) {
   await Promise.allSettled(
-    nodeUrls.map((nodeUrl) => fetch(`${nodeUrl}/internal/blobs/${blobId}`, { method: 'DELETE', headers: headers() }))
+    nodeUrls.map((nodeUrl) => axios.delete(`${nodeUrl}/internal/blobs/${blobId}`, { headers: headers() }))
   )
 }

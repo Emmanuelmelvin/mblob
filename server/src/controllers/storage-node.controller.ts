@@ -1,7 +1,7 @@
 import type { Context } from 'hono'
 
-import { deleteBlobReplica, readBlobReplica, storeBlobReplica } from '../services/storage-node.service.js'
-import { parseStorageBlobId, parseStoragePayload } from '../validators/storage-node.validators.js'
+import { deleteBlobReplica, readBlobReplica, storeBlobReplica } from '@/services/storage-node.service'
+import { parseStorageBlobId, parseStoragePayload } from '@/validators/storage-node.validators'
 
 export async function putStorageBlobController(c: Context) {
   const blobId = parseStorageBlobId(c.req.param('blobId'))

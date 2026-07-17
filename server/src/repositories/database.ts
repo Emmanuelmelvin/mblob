@@ -1,6 +1,6 @@
 import postgres from 'postgres'
 
-import { config } from '../utils/config.js'
+import { config } from '@/utils/config'
 
 export const sql = postgres(config.DATABASE_URL)
 

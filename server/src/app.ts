@@ -1,9 +1,9 @@
 import { Hono } from 'hono'
 
-import { accessLogMiddleware } from './middlewares/access.middleware.js'
-import { apiCors } from './middlewares/cors.middleware.js'
-import { errorMiddleware } from './middlewares/error.middleware.js'
-import { blobRoutes, gatewayHealthRoutes, walletRoutes } from './routes/index.js'
+import { accessLogMiddleware } from '@/middlewares/access.middleware'
+import { apiCors } from '@/middlewares/cors.middleware'
+import { errorMiddleware } from '@/middlewares/error.middleware'
+import { blobRoutes, gatewayHealthRoutes, walletRoutes } from '@/routes/index'
 
 export function createApp() {
   // Build the gateway without binding a port so routes can be tested in isolation.

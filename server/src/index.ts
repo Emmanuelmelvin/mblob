@@ -1,9 +1,9 @@
 import { serve } from '@hono/node-server'
 
-import { createApp } from './app.js'
-import { config } from './config.js'
-import { initializeDatabase } from './database.js'
-import { logger } from './utils/logger.js'
+import { createApp } from '@/app'
+import { config } from '@/utils/config'
+import { initializeDatabase } from '@/repositories/database'
+import { logger } from '@/utils/logger'
 
 await initializeDatabase()
 

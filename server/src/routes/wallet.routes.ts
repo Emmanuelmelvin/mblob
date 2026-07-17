@@ -1,5 +1,6 @@
 import { Hono } from 'hono'
 
-import { getWalletBlobsController } from '../controllers/wallet.controller.js'
+import { getWalletBlobsController } from '@/controllers/wallet.controller'
 
-export const walletRoutes = new Hono().get('/:address/blobs', getWalletBlobsController)
+export const walletRoutes = new Hono()
+    .get('/:address/blobs', getWalletBlobsController)

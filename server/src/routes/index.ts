@@ -1,4 +1,4 @@
-export { blobRoutes } from './blob.routes.js'
-export { gatewayHealthRoutes, storageNodeHealthRoutes } from './health.routes.js'
-export { storageNodeRoutes } from './storage-node.routes.js'
-export { walletRoutes } from './wallet.routes.js'
+export { blobRoutes } from '@/routes/blob.routes'
+export { gatewayHealthRoutes, storageNodeHealthRoutes } from '@/routes/health.routes'
+export { storageNodeRoutes } from '@/routes/storage-node.routes'
+export { walletRoutes } from '@/routes/wallet.routes'

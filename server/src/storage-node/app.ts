@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 
-import { errorMiddleware } from './middlewares/error.middleware.js'
-import { storageNodeHealthRoutes, storageNodeRoutes } from './routes/index.js'
+import { errorMiddleware } from '@/middlewares/error.middleware'
+import { storageNodeHealthRoutes, storageNodeRoutes } from '@/routes/index'
 
 export function createStorageNodeApp() {
   const app = new Hono()

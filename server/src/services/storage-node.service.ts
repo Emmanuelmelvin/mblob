@@ -1,8 +1,8 @@
 import { mkdir, readFile, rm, writeFile } from 'node:fs/promises'
 import path from 'node:path'
 
-import { config } from '../utils/config.js'
-import { notFound } from '../utils/errors.js'
+import { config } from '@/utils/config'
+import { notFound } from '@/utils/errors'
 
 function blobPath(blobId: string) {
   // All storage-node file access goes through this helper to prevent route handlers

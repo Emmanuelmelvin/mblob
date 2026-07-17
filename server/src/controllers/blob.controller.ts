@@ -1,9 +1,9 @@
 import type { Context } from 'hono'
 
-import { getBlob, downloadBlob, uploadBlob } from '../services/blob.service.js'
-import { badRequest } from '../utils/errors.js'
-import { logger } from '../utils/logger.js'
-import { parseBlobId, parseBlobReference, parseUploadFile, parseUploadFormFile } from '../validators/blob.validators.js'
+import { getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
+import { badRequest } from '@/utils/errors'
+import { logger } from '@/utils/logger'
+import { parseBlobId, parseBlobReference, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
 
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))

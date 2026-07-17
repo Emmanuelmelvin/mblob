@@ -1,12 +1,12 @@
 import { randomUUID } from 'node:crypto'
 
-import { config } from '../utils/config.js'
-import { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '../repositories/blob.repository.js'
-import { verifyRequestSignature } from './auth.service.js'
-import { activateBlob, assertBlobOwner, getChainBlob } from './chain.service.js'
-import { decryptFromStorage, encryptForStorage, fileContentHashes, matchesFileHash } from './crypto.service.js'
-import { replicate, retrieve } from './storage.service.js'
-import { notFound } from '../utils/errors.js'
+import { config } from '@/utils/config'
+import { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '@/repositories/blob.repository'
+import { verifyRequestSignature } from '@/services/auth.service'
+import { activateBlob, assertBlobOwner, getChainBlob } from '@/services/chain.service'
+import { decryptFromStorage, encryptForStorage, fileContentHashes, matchesFileHash } from '@/services/crypto.service'
+import { replicate, retrieve } from '@/services/storage.service'
+import { notFound } from '@/utils/errors'
 
 export async function resolveBlobReference(reference: string) {
   // Public IDs are shareable aliases; numeric IDs can be used directly on-chain.

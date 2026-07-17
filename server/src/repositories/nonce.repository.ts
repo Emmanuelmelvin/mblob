@@ -1,1 +1,1 @@
-export { reserveNonce } from './database.js'
+export { reserveNonce } from '@/repositories/database'

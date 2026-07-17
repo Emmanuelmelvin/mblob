@@ -1,8 +1,8 @@
 import { isAddress } from 'viem'
 import { z } from 'zod'
 
-import { config } from '../config.js'
-import { badRequest } from '../utils/errors.js'
+import { config } from '@/utils/config'
+import { badRequest } from '@/utils/errors'
 
 export const numericBlobIdSchema = z.string().regex(/^\d+$/, 'Invalid blob ID')
 export const blobReferenceSchema = z.string().regex(/^(\d+|mb1_[A-Za-z0-9_]+)$/, 'Invalid blob reference')

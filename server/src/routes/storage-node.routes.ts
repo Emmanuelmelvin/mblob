@@ -1,7 +1,7 @@
 import { Hono } from 'hono'
 
-import { deleteStorageBlobController, getStorageBlobController, putStorageBlobController } from '../controllers/storage-node.controller.js'
-import { requireStorageToken } from '../middlewares/storage-token.middleware.js'
+import { deleteStorageBlobController, getStorageBlobController, putStorageBlobController } from '@/controllers/storage-node.controller'
+import { requireStorageToken } from '@/middlewares/storage-token.middleware'
 
 export const storageNodeRoutes = new Hono()
 
