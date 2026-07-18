@@ -2,21 +2,38 @@ import type { Context } from 'hono'
 
 import { getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
 import { logger } from '@/utils/logger'
-import { badRequest } from '@/utils/errors'
+import { badRequest, errorContext } from '@/utils/errors'
 import { parseBlobId, parseBlobReference, parseUploadContentType, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
+
+function decodeFileName(fileName: string) {
+  try {
+    return decodeURIComponent(fileName)
+  } catch {
+    return fileName
+  }
+}
 
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
-  parseUploadContentType(c.req.header('content-type'))
+  const uploadContentType = parseUploadContentType(c.req.header('content-type'))
 
-  let body: Record<string, File | string>
-  try {
-    body = await c.req.parseBody()
-  } catch {
-    throw badRequest('Malformed multipart form data')
+  let file: File
+  if (uploadContentType.isMultipart) {
+    let body: Record<string, unknown>
+    try {
+      body = await c.req.parseBody()
+    } catch (error) {
+      logger.warn(errorContext(error), 'Failed to parse multipart upload body')
+      throw badRequest('Malformed multipart form data')
+    }
+
+    file = parseUploadFile(parseUploadFormFile(body['file'] ?? null))
+  } else {
+    const bytes = await c.req.raw.arrayBuffer()
+    const fileName = c.req.header('x-file-name') || 'upload.bin'
+    const decodedFileName = decodeFileName(fileName)
+    file = parseUploadFile(new File([new Uint8Array(bytes)], decodedFileName, { type: uploadContentType.contentType || 'application/octet-stream' }))
   }
-
-  const file = parseUploadFile(parseUploadFormFile(body['file'] ?? null))
   const result = await uploadBlob({
     blobId,
     headers: c.req.raw.headers,
