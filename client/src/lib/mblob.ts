@@ -82,9 +82,20 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     })
     const createTxHash = await walletClient.writeContract({ account: address, chain: monadTestnet, address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'createBlob', args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false], value: quote })
     const receipt = await publicClient.waitForTransactionReceipt({ hash: createTxHash })
-    const event = parseEventLogs({ abi: registryAbi, logs: receipt.logs, eventName: 'BlobCreated' })[0]
+    const registryLogs = receipt.logs.filter((log) => log.address.toLowerCase() === CONTRACT.REGISTRY_ADDRESS.toLowerCase())
+    const event = parseEventLogs({ abi: registryAbi, logs: registryLogs, eventName: 'BlobCreated' })[0]
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
+
+    const chainBlob = await publicClient.readContract({
+        address: CONTRACT.REGISTRY_ADDRESS,
+        abi: registryAbi,
+        functionName: 'getBlob',
+        args: [blobId],
+    })
+    if (chainBlob.fileHash.toLowerCase() !== fileHash.toLowerCase()) {
+        throw new Error(`The created blob record hash does not match the selected file hash. Expected ${fileHash}, got ${chainBlob.fileHash}.`)
+    }
 
     const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
 
@@ -93,6 +104,7 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
         body: uploadBody,
         headers: {
             'x-create-tx-hash': createTxHash,
+            'x-file-hash': fileHash,
             'x-file-name': encodeURIComponent(file.name),
             'content-type': uploadBody.type,
         },
