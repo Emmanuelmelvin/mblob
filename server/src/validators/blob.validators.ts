@@ -29,11 +29,6 @@ export function parseWalletAddress(address: string | undefined) {
   return parsed.data
 }
 
-export function parseUploadFormFile(value: File | string | null) {
-  if (!(value instanceof File)) throw badRequest('Upload form must include a file field')
-  return value
-}
-
 export function parseUploadFile(file: File) {
   if (file.size === 0 || file.size > config.MAX_UPLOAD_BYTES) throw badRequest('Invalid file size')
   return file

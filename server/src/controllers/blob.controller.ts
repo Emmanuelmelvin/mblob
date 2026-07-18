@@ -1,22 +1,22 @@
 import type { Context } from 'hono'
 
-import { getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
+import { deleteBlob, getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
 import { logger } from '@/utils/logger'
-import { badRequest } from '@/utils/errors'
-import { parseBlobId, parseBlobReference, parseUploadContentType, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
+import { parseBlobId, parseBlobReference, parseUploadFile } from '@/validators/blob.validators'
+
+function decodeFileName(fileName: string) {
+  try {
+    return decodeURIComponent(fileName)
+  } catch {
+    return fileName
+  }
+}
 
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
-  parseUploadContentType(c.req.header('content-type'))
-
-  let body: Record<string, File | string>
-  try {
-    body = await c.req.parseBody()
-  } catch {
-    throw badRequest('Malformed multipart form data')
-  }
-
-  const file = parseUploadFile(parseUploadFormFile(body['file'] ?? null))
+  const body = await c.req.arrayBuffer()
+  const fileName = decodeFileName(c.req.header('x-file-name') ?? `mblob-${blobId}`)
+  const file = parseUploadFile(new File([new Uint8Array(body)], fileName, { type: c.req.header('content-type') ?? 'application/octet-stream' }))
   const result = await uploadBlob({
     blobId,
     headers: c.req.raw.headers,
@@ -42,4 +42,9 @@ export async function downloadBlobController(c: Context) {
   c.header('content-disposition', `attachment; filename="mblob-${blobId}"`)
   const body = plaintext.buffer.slice(plaintext.byteOffset, plaintext.byteOffset + plaintext.byteLength) as ArrayBuffer
   return new Response(body, { headers: c.res.headers })
+}
+
+export async function deleteBlobController(c: Context) {
+  const reference = parseBlobReference(c.req.param('blobId'))
+  return c.json(await deleteBlob({ reference, headers: c.req.raw.headers }))
 }

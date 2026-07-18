@@ -41,14 +41,14 @@ export const bytes32Hash = async (file: File | ArrayBuffer): Promise<Hex> => {
     return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
 }
 
-const authorizationMessage = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
+const authorizationMessage = (operation: 'upload' | 'download' | 'delete', blobId: string, nonce: string) =>
     `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`
 
 const api = axios.create({
     baseURL: GATEWAY.BASE_URL,
 })
 
-async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
+async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download' | 'delete', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage(operation, blobId, nonce) })
     const headers = new Headers(init.headers)
@@ -71,17 +71,13 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
 
-    // Keep using the bytes captured before wallet signing. Some mobile browsers/wallets
-    // can lose access to the original File handle after the transaction/signature flow.
-    const formData = new FormData()
-    formData.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
-
     const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), '/upload', {
         method: 'POST',
-        body: formData,
+        body: file,
         headers: {
             'x-create-tx-hash': createTxHash,
             'x-file-name': encodeURIComponent(file.name),
+            'content-type': file.type || 'application/octet-stream',
         },
     })
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
@@ -121,6 +117,12 @@ export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlo
         status: blob.status,
         payment: blob.payment.toString(),
     }
+}
+
+export async function deleteBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
+    const response = await authorizedFetch(walletClient, address, 'delete', blobId, '', { method: 'DELETE' })
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Delete failed')
+    return response.json() as Promise<{ blobId: string; status: string }>
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
