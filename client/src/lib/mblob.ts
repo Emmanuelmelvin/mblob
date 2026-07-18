@@ -62,11 +62,23 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     const fileBytes = await file.arrayBuffer()
     const fileHash = await bytes32Hash(fileBytes)
     const quote = await publicClient.readContract({
-        address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'quote', args: [BigInt(file.size), 24n, 3, false],
+        address: CONTRACT.REGISTRY_ADDRESS, 
+        abi: registryAbi, 
+        functionName: 'quote', 
+        args: [BigInt(file.size), 24n, 3, false],
         authorizationList: undefined
     })
-    const createTxHash = await walletClient.writeContract({ account: address, chain: monadTestnet, address: CONTRACT.REGISTRY_ADDRESS, abi: registryAbi, functionName: 'createBlob', args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false], value: quote })
+    const createTxHash = await walletClient.writeContract({
+         account: address, 
+         chain: monadTestnet, 
+         address: CONTRACT.REGISTRY_ADDRESS, 
+         abi: registryAbi, 
+         functionName: 'createBlob', 
+         args: [fileHash, zeroHash, BigInt(file.size), 24n, 3, false],
+          value: quote
+    })
     const receipt = await publicClient.waitForTransactionReceipt({ hash: createTxHash })
+
     const event = parseEventLogs({ abi: registryAbi, logs: receipt.logs, eventName: 'BlobCreated' })[0]
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
@@ -76,7 +88,12 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     const formData = new FormData()
     formData.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
 
-    const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), '/upload', {
+    const response = await authorizedFetch(
+        walletClient, 
+        address, 
+        'upload', 
+        blobId.toString(),
+        '/upload', {
         method: 'POST',
         body: formData,
         headers: {
@@ -87,7 +104,11 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
 
     const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
-    return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
+    return { 
+        blobId: blobId.toString(), 
+        publicId: uploaded.publicId, 
+        transactionHash: uploaded.transactionHash
+     }
 }
 
 export async function getBlob(blobId: string) {
