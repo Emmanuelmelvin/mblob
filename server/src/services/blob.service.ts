@@ -4,7 +4,7 @@ import { config } from '@/utils/config'
 import { deleteStoredBlob, getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '@/repositories/blob.repository'
 import { verifyRequestSignature } from '@/services/auth.service'
 import { activateBlob, assertBlobOwner, getChainBlob } from '@/services/chain.service'
-import { decryptFromStorage, encryptForStorage, fileContentHashes, matchesFileHash } from '@/services/crypto.service'
+import { decryptFromStorage, encryptForStorage, matchesFileHash } from '@/services/crypto.service'
 import { deleteReplicas, replicate, retrieve } from '@/services/storage.service'
 import { notFound } from '@/utils/errors'
 
@@ -20,9 +20,7 @@ export async function uploadBlob(input: { blobId: string; headers: Headers; file
   const owner = await verifyRequestSignature(input.headers, 'upload', input.blobId)
   const chainBlob = await assertBlobOwner(BigInt(input.blobId), owner, 0)
   const plaintext = Buffer.from(await input.file.arrayBuffer())
-  const fileHashes = fileContentHashes(plaintext)
-
-  if (!Object.values(fileHashes).some((hash) => hash.toLowerCase() === chainBlob.fileHash.toLowerCase())) {
+  if (!matchesFileHash(plaintext, chainBlob.fileHash)) {
     throw new Error('File hash does not match the on-chain blob record')
   }
 

@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { createPublicClient, defineChain, http, parseEventLogs, zeroHash, type Address, type Hex } from 'viem'
 import { CONTRACT, GATEWAY } from '@/lib/constants'
 
@@ -48,6 +48,21 @@ const api = axios.create({
     baseURL: GATEWAY.BASE_URL,
 })
 
+function serverErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof AxiosError) {
+        const payload = error.response?.data
+        if (payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string') return payload.error
+    }
+    if (error instanceof Error) return error.message
+    return fallback
+}
+
+async function responseErrorMessage(response: Response, fallback: string) {
+    const payload = await response.json().catch(() => null)
+    if (payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string') return payload.error
+    return fallback
+}
+
 async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download' | 'delete', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage(operation, blobId, nonce) })
@@ -80,20 +95,28 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
             'content-type': file.type || 'application/octet-stream',
         },
     })
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
+    if (!response.ok) throw new Error(await responseErrorMessage(response, 'Upload failed'))
 
     const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
     return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
 }
 
 export async function getBlob(blobId: string) {
-    const response = await api.get(`/v1/blobs/${encodeURIComponent(blobId)}`)
-    return response.data as BlobInfo
+    try {
+        const response = await api.get(`/v1/blobs/${encodeURIComponent(blobId)}`)
+        return response.data as BlobInfo
+    } catch (error) {
+        throw new Error(serverErrorMessage(error, 'Lookup failed'))
+    }
 }
 
 export async function getWalletBlobs(address: Address) {
-    const response = await api.get(`/v1/wallets/${address}/blobs`)
-    return response.data as { owner: string; blobs: OwnedBlob[] }
+    try {
+        const response = await api.get(`/v1/wallets/${address}/blobs`)
+        return response.data as { owner: string; blobs: OwnedBlob[] }
+    } catch (error) {
+        throw new Error(serverErrorMessage(error, 'Unable to load blobs'))
+    }
 }
 
 export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlobMetadata> {
@@ -121,13 +144,13 @@ export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlo
 
 export async function deleteBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
     const response = await authorizedFetch(walletClient, address, 'delete', blobId, '', { method: 'DELETE' })
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Delete failed')
+    if (!response.ok) throw new Error(await responseErrorMessage(response, 'Delete failed'))
     return response.json() as Promise<{ blobId: string; status: string }>
 }
 
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
     const response = await authorizedFetch(walletClient, address, 'download', blobId, '/download')
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Download failed')
+    if (!response.ok) throw new Error(await responseErrorMessage(response, 'Download failed'))
     const file = await response.blob()
     const url = URL.createObjectURL(file)
     const link = document.createElement('a')
