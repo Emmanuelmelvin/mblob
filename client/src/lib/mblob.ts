@@ -86,13 +86,15 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
 
+    const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
+
     const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), '/upload', {
         method: 'POST',
-        body: file,
+        body: uploadBody,
         headers: {
             'x-create-tx-hash': createTxHash,
             'x-file-name': encodeURIComponent(file.name),
-            'content-type': file.type || 'application/octet-stream',
+            'content-type': uploadBody.type,
         },
     })
     if (!response.ok) throw new Error(await responseErrorMessage(response, 'Upload failed'))
