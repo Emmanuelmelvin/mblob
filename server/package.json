@@ -6,7 +6,7 @@
   "scripts": {
     "dev": "npm exec -- tsx watch src/index.ts",
     "dev:client": "cd ../client && npx --yes vite",
-    "build": "cd ../client && npx --yes vite build && cd ../server && npm exec -- tsc -p tsconfig.json",
+    "build": "cd ../client && npx --yes vite build && cd ../server && npm exec -- tsc -p tsconfig.json && npm exec -- tsc-alias -p tsconfig.json",
     "build:client": "cd ../client && npx --yes vite build",
     "start": "node dist/index.js",
     "start:storage-node": "node dist/storage-node.js",
@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@types/node": "^22.18.0",
+    "tsc-alias": "^1.8.10",
     "tsx": "^4.20.0",
     "typescript": "^5.9.0"
   }
