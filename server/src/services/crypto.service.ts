@@ -21,7 +21,11 @@ export function fileContentHashes(input: Buffer) {
 
 export function matchesFileHash(input: Buffer, expectedHash: string) {
   const normalizedExpected = expectedHash.toLowerCase()
-  return Object.values(fileContentHashes(input)).some((hash) => hash.toLowerCase() === normalizedExpected)
+  const hashes = fileContentHashes(input)
+
+  // SHA-256 is the canonical browser/client hash. Keccak-256 is accepted only
+  // as a compatibility fallback for blob records created with earlier clients.
+  return hashes.sha256.toLowerCase() === normalizedExpected || hashes.keccak256.toLowerCase() === normalizedExpected
 }
 
 function seal(plaintext: Buffer, key: Buffer): Buffer {

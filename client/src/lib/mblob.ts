@@ -1,4 +1,4 @@
-import axios from 'axios'
+import axios, { AxiosError } from 'axios'
 import { createPublicClient, defineChain, http, parseEventLogs, zeroHash, type Address, type Hex } from 'viem'
 import { CONTRACT, GATEWAY } from '@/lib/constants'
 
@@ -41,14 +41,29 @@ export const bytes32Hash = async (file: File | ArrayBuffer): Promise<Hex> => {
     return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
 }
 
-const authorizationMessage = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
+const authorizationMessage = (operation: 'upload' | 'download' | 'delete', blobId: string, nonce: string) =>
     `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`
 
 const api = axios.create({
     baseURL: GATEWAY.BASE_URL,
 })
 
-async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
+function serverErrorMessage(error: unknown, fallback: string) {
+    if (error instanceof AxiosError) {
+        const payload = error.response?.data
+        if (payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string') return payload.error
+    }
+    if (error instanceof Error) return error.message
+    return fallback
+}
+
+async function responseErrorMessage(response: Response, fallback: string) {
+    const payload = await response.json().catch(() => null)
+    if (payload && typeof payload === 'object' && 'error' in payload && typeof payload.error === 'string') return payload.error
+    return fallback
+}
+
+async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download' | 'delete', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage(operation, blobId, nonce) })
     const headers = new Headers(init.headers)
@@ -78,15 +93,22 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
           value: quote
     })
     const receipt = await publicClient.waitForTransactionReceipt({ hash: createTxHash })
-
-    const event = parseEventLogs({ abi: registryAbi, logs: receipt.logs, eventName: 'BlobCreated' })[0]
+    const registryLogs = receipt.logs.filter((log) => log.address.toLowerCase() === CONTRACT.REGISTRY_ADDRESS.toLowerCase())
+    const event = parseEventLogs({ abi: registryAbi, logs: registryLogs, eventName: 'BlobCreated' })[0]
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
 
-    // Keep using the bytes captured before wallet signing. Some mobile browsers/wallets
-    // can lose access to the original File handle after the transaction/signature flow.
-    const formData = new FormData()
-    formData.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
+    const chainBlob = await publicClient.readContract({
+        address: CONTRACT.REGISTRY_ADDRESS,
+        abi: registryAbi,
+        functionName: 'getBlob',
+        args: [blobId],
+    })
+    if (chainBlob.fileHash.toLowerCase() !== fileHash.toLowerCase()) {
+        throw new Error(`The created blob record hash does not match the selected file hash. Expected ${fileHash}, got ${chainBlob.fileHash}.`)
+    }
+
+    const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
 
     const response = await authorizedFetch(
         walletClient, 
@@ -95,13 +117,15 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
         blobId.toString(),
         '/upload', {
         method: 'POST',
-        body: formData,
+        body: uploadBody,
         headers: {
             'x-create-tx-hash': createTxHash,
+            'x-file-hash': fileHash,
             'x-file-name': encodeURIComponent(file.name),
+            'content-type': uploadBody.type,
         },
     })
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
+    if (!response.ok) throw new Error(await responseErrorMessage(response, 'Upload failed'))
 
     const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
     return { 
@@ -112,13 +136,21 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
 }
 
 export async function getBlob(blobId: string) {
-    const response = await api.get(`/v1/blobs/${encodeURIComponent(blobId)}`)
-    return response.data as BlobInfo
+    try {
+        const response = await api.get(`/v1/blobs/${encodeURIComponent(blobId)}`)
+        return response.data as BlobInfo
+    } catch (error) {
+        throw new Error(serverErrorMessage(error, 'Lookup failed'))
+    }
 }
 
 export async function getWalletBlobs(address: Address) {
-    const response = await api.get(`/v1/wallets/${address}/blobs`)
-    return response.data as { owner: string; blobs: OwnedBlob[] }
+    try {
+        const response = await api.get(`/v1/wallets/${address}/blobs`)
+        return response.data as { owner: string; blobs: OwnedBlob[] }
+    } catch (error) {
+        throw new Error(serverErrorMessage(error, 'Unable to load blobs'))
+    }
 }
 
 export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlobMetadata> {
@@ -144,9 +176,15 @@ export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlo
     }
 }
 
+export async function deleteBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
+    const response = await authorizedFetch(walletClient, address, 'delete', blobId, '', { method: 'DELETE' })
+    if (!response.ok) throw new Error(await responseErrorMessage(response, 'Delete failed'))
+    return response.json() as Promise<{ blobId: string; status: string }>
+}
+
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
     const response = await authorizedFetch(walletClient, address, 'download', blobId, '/download')
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Download failed')
+    if (!response.ok) throw new Error(await responseErrorMessage(response, 'Download failed'))
     const file = await response.blob()
     const url = URL.createObjectURL(file)
     const link = document.createElement('a')

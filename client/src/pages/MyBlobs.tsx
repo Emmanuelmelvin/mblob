@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react'
-import { ChevronDownIcon, ChevronRightIcon, CopyIcon, DownloadIcon, ExternalLinkIcon, ReaderIcon } from '@radix-ui/react-icons'
-import { downloadBlob, getOnChainBlobMetadata, getWalletBlobs, type OnChainBlobMetadata, type OwnedBlob } from '@/lib/mblob'
+import { ChevronDownIcon, ChevronRightIcon, CopyIcon, DownloadIcon, ExternalLinkIcon, ReaderIcon, TrashIcon } from '@radix-ui/react-icons'
+import { deleteBlob, downloadBlob, getOnChainBlobMetadata, getWalletBlobs, type OnChainBlobMetadata, type OwnedBlob } from '@/lib/mblob'
 import { useWallet } from '@/lib/wallet'
 import { formatBytes } from '@/lib/utils'
 import { CONTRACT } from '@/lib/constants'
@@ -40,6 +40,18 @@ export function MyBlobs() {
             setMetadata(await getOnChainBlobMetadata(blobId))
         } catch (reason) {
             setError(reason instanceof Error ? reason.message : 'Unable to retrieve on-chain metadata')
+        }
+    }
+
+    async function deleteStoredBlob(publicId: string) {
+        setError(null)
+        try {
+            const owner = address ?? await connect()
+            if (!walletClient) throw new Error('Wallet connection is not ready. Please try again.')
+            await deleteBlob(walletClient, owner, publicId)
+            setBlobs((current) => current.filter((blob) => (blob.publicId ?? blob.blobId) !== publicId))
+        } catch (reason) {
+            setError(reason instanceof Error ? reason.message : 'Delete failed')
         }
     }
 
@@ -87,6 +99,7 @@ export function MyBlobs() {
                             <a href={`${CONTRACT.EXPLORER_URL}/tx/${blob.createTxHash ?? blob.activateTxHash ?? ''}`} target="_blank" rel="noopener noreferrer" className="border border-black px-3 py-2 text-xs hover:bg-neutral-100 flex items-center gap-1"><ExternalLinkIcon />Explorer</a>
                             <button onClick={() => void showOnChain(blob.blobId)} className="border border-black px-3 py-2 text-xs hover:bg-neutral-100 flex items-center gap-1"><ReaderIcon />View on-chain metadata</button>
                             <button onClick={() => void download(displayId)} className="bg-black text-white px-3 py-2 text-xs hover:bg-neutral-800 flex items-center gap-1"><DownloadIcon />Download</button>
+                            <button onClick={() => void deleteStoredBlob(displayId)} className="border border-red-800 text-red-800 px-3 py-2 text-xs hover:bg-red-50 flex items-center gap-1"><TrashIcon />Delete</button>
                         </div>
                     </div>
                     {isOpen && <div className="border-t border-black divide-y divide-black bg-neutral-50">
