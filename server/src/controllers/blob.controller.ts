@@ -2,12 +2,21 @@ import type { Context } from 'hono'
 
 import { getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
 import { logger } from '@/utils/logger'
-import { parseBlobId, parseBlobReference, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
+import { badRequest } from '@/utils/errors'
+import { parseBlobId, parseBlobReference, parseUploadContentType, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
 
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
-  const body = await c.req.parseBody()
-  const file = parseUploadFile(parseUploadFormFile(body['file'] as any))
+  parseUploadContentType(c.req.header('content-type'))
+
+  let body: Record<string, File | string>
+  try {
+    body = await c.req.parseBody()
+  } catch {
+    throw badRequest('Malformed multipart form data')
+  }
+
+  const file = parseUploadFile(parseUploadFormFile(body['file'] ?? null))
   const result = await uploadBlob({
     blobId,
     headers: c.req.raw.headers,

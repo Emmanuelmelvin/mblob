@@ -71,24 +71,22 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     const blobId = event?.args.blobId
     if (blobId === undefined) throw new Error('The payment transaction did not create a blob record.')
 
-    const nonce = crypto.randomUUID()
-    const signature = await walletClient.signMessage({ account: address, message: authorizationMessage('upload', blobId.toString(), nonce) })
-
     // Keep using the bytes captured before wallet signing. Some mobile browsers/wallets
     // can lose access to the original File handle after the transaction/signature flow.
     const formData = new FormData()
     formData.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
 
-    const response = await api.post(`/v1/blobs/${blobId.toString()}/upload`, formData, {
+    const response = await authorizedFetch(walletClient, address, 'upload', blobId.toString(), '/upload', {
+        method: 'POST',
+        body: formData,
         headers: {
-            'x-mblob-address': address,
-            'x-mblob-signature': signature,
-            'x-mblob-nonce': nonce,
             'x-create-tx-hash': createTxHash,
             'x-file-name': encodeURIComponent(file.name),
         },
     })
-    const uploaded = response.data as { publicId: string; transactionHash: string | null }
+    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
+
+    const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
     return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
 }
 
