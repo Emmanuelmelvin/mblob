@@ -4,7 +4,7 @@ COPY package*.json ./
 RUN npm ci
 COPY tsconfig.json ./
 COPY src ./src
-RUN npm exec -- tsc -p tsconfig.json && npm exec -- tsc-alias -p tsconfig.json && npm prune --omit=dev
+RUN npm run build
 
 FROM node:22-alpine
 WORKDIR /app
