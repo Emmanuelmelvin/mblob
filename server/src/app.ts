@@ -6,7 +6,7 @@ import { errorMiddleware } from '@/middlewares/error.middleware'
 import { blobRoutes, gatewayHealthRoutes, walletRoutes } from '@/routes/index'
 
 export function createApp() {
-  // Build the gateway without binding a port so routes can be tested in isolation.
+  // Build the gateway without binding a port so routes can be tested in isolation
   const app = new Hono()
 
   app.onError(errorMiddleware)
