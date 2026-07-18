@@ -29,7 +29,15 @@ export function parseWalletAddress(address: string | undefined) {
   return parsed.data
 }
 
-export function parseUploadFormFile(value: File | string | null) {
+export function parseUploadContentType(contentType: string | undefined) {
+  const normalized = contentType?.toLowerCase() ?? 'application/octet-stream'
+  return {
+    contentType: contentType || 'application/octet-stream',
+    isMultipart: normalized.includes('multipart/form-data')
+  }
+}
+
+export function parseUploadFormFile(value: unknown) {
   if (!(value instanceof File)) throw badRequest('Upload form must include a file field')
   return value
 }
