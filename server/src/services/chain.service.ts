@@ -5,7 +5,9 @@ import {
   http, 
   isAddress, 
   type Address, 
-  type Hex 
+  type Hex, 
+  type PublicClient,
+  type WalletClient 
 } from 'viem'
 import { privateKeyToAccount } from 'viem/accounts'
 
@@ -28,8 +30,8 @@ const monadTestnet = defineChain({
   rpcUrls: { default: { http: [config.MONAD_RPC_URL] } }
 })
 
-export const publicClient = createPublicClient({ chain: monadTestnet, transport })
-export const walletClient = createWalletClient({ account, chain: monadTestnet, transport })
+export const publicClient: PublicClient<typeof transport, typeof monadTestnet> = createPublicClient({ chain: monadTestnet, transport })
+export const walletClient: WalletClient<typeof transport, typeof monadTestnet, typeof account> = createWalletClient({ account, chain: monadTestnet, transport })
 
 export async function getChainBlob(blobId: bigint): Promise<ChainBlob> {
   const blob = await publicClient.readContract({
