@@ -22,7 +22,6 @@ export async function uploadBlob(input: { blobId: string; headers: Headers; file
   const chainBlob = await assertBlobOwner(BigInt(input.blobId), owner, 0)
   const plaintext = Buffer.from(await input.file.arrayBuffer())
   const uploadedHashes = fileContentHashes(plaintext)
-  const clientFileHash = input.headers.get('x-file-hash')
 
   logger.info({
     blobId: input.blobId,
@@ -32,7 +31,6 @@ export async function uploadBlob(input: { blobId: string; headers: Headers; file
     expectedFileHash: chainBlob.fileHash,
     uploadedSha256: uploadedHashes.sha256,
     uploadedKeccak256: uploadedHashes.keccak256,
-    clientFileHash,
     uploadedBytes: plaintext.length,
     onChainFileSizeBytes: chainBlob.fileSizeBytes.toString(),
     fileSize: input.file.size,
@@ -53,7 +51,6 @@ export async function uploadBlob(input: { blobId: string; headers: Headers; file
       expectedFileHash: chainBlob.fileHash,
       uploadedSha256: uploadedHashes.sha256,
       uploadedKeccak256: uploadedHashes.keccak256,
-      clientFileHash,
       uploadedBytes: plaintext.length,
       onChainFileSizeBytes: chainBlob.fileSizeBytes.toString(),
       fileSize: input.file.size,
