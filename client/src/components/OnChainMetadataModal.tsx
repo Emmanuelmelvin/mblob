@@ -1,6 +1,6 @@
 import { useEffect } from 'react'
-import type { OnChainBlobMetadata } from '../lib/mblob'
-import { formatUnixTimestamp } from '../lib/utils'
+import type { OnChainBlobMetadata } from '@/lib/mblob'
+import { formatUnixTimestamp } from '@/lib/utils'
 
 const statusLabel = (status: number) => status === 1 ? 'Active' : status === 2 ? 'Deleted' : 'Pending'
 

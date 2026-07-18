@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react'
 import { ChevronDownIcon, ChevronRightIcon, CopyIcon, DownloadIcon, ExternalLinkIcon, ReaderIcon } from '@radix-ui/react-icons'
-import { downloadBlob, getOnChainBlobMetadata, getWalletBlobs, type OnChainBlobMetadata, type OwnedBlob } from '../lib/mblob'
-import { useWallet } from '../lib/wallet'
-import { formatBytes } from '../lib/utils'
-import { CONTRACT } from '../lib/constants'
-import { OnChainMetadataModal } from '../components/OnChainMetadataModal'
+import { downloadBlob, getOnChainBlobMetadata, getWalletBlobs, type OnChainBlobMetadata, type OwnedBlob } from '@/lib/mblob'
+import { useWallet } from '@/lib/wallet'
+import { formatBytes } from '@/lib/utils'
+import { CONTRACT } from '@/lib/constants'
+import { OnChainMetadataModal } from '@/components/OnChainMetadataModal'
 
 export function MyBlobs() {
     const { address, connect, walletClient } = useWallet()

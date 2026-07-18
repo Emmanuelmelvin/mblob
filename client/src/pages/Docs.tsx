@@ -1,4 +1,4 @@
-import { CONTRACT } from '../lib/constants'
+import { CONTRACT } from '@/lib/constants'
 
 export function Docs() {
     return (

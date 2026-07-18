@@ -1,7 +1,7 @@
 import React, { useState } from 'react'
 import { Link, useLocation } from 'wouter'
 import { UploadIcon, DownloadIcon, HomeIcon, ReaderIcon, ExitIcon, ArchiveIcon } from '@radix-ui/react-icons'
-import { useWallet } from '../lib/wallet'
+import { useWallet } from '@/lib/wallet'
 
 const navItems = [
     { href: '/', label: 'Home', icon: HomeIcon },

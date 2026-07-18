@@ -11,10 +11,10 @@ import {
   getOnChainBlobMetadata,
   type BlobInfo,
   type OnChainBlobMetadata,
-} from "../lib/mblob";
-import { useWallet } from "../lib/wallet";
-import { CONTRACT } from "../lib/constants";
-import { OnChainMetadataModal } from "../components/OnChainMetadataModal";
+} from "@/lib/mblob";
+import { useWallet } from "@/lib/wallet";
+import { CONTRACT } from "@/lib/constants";
+import { OnChainMetadataModal } from "@/components/OnChainMetadataModal";
 
 export function Retrieve() {
   const [blobId, setBlobId] = useState("");

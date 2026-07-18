@@ -1,6 +1,6 @@
 import { Link } from 'wouter'
 import { UploadIcon, DownloadIcon, LockClosedIcon, GlobeIcon } from '@radix-ui/react-icons'
-import { CONTRACT } from '../lib/constants'
+import { CONTRACT } from '@/lib/constants'
 
 const features = [
     {

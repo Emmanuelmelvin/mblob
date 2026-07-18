@@ -1,11 +1,11 @@
 import { Router, Route, Switch } from 'wouter'
-import { Layout } from './components/Layout'
-import { Home } from './pages/Home'
-import { Upload } from './pages/Upload'
-import { Retrieve } from './pages/Retrieve'
-import { MyBlobs } from './pages/MyBlobs'
-import { Docs } from './pages/Docs'
-import { WalletProvider } from './lib/wallet'
+import { Layout } from '@/components/Layout'
+import { Home } from '@/pages/Home'
+import { Upload } from '@/pages/Upload'
+import { Retrieve } from '@/pages/Retrieve'
+import { MyBlobs } from '@/pages/MyBlobs'
+import { Docs } from '@/pages/Docs'
+import { WalletProvider } from '@/lib/wallet'
 
 export default function App() {
   return <WalletProvider>

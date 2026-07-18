@@ -1,5 +1,6 @@
+import axios from 'axios'
 import { createPublicClient, defineChain, http, parseEventLogs, zeroHash, type Address, type Hex } from 'viem'
-import { CONTRACT, GATEWAY } from './constants'
+import { CONTRACT, GATEWAY } from '@/lib/constants'
 
 export const monadTestnet = defineChain({
     id: CONTRACT.CHAIN_ID,
@@ -43,6 +44,10 @@ export const bytes32Hash = async (file: File | ArrayBuffer): Promise<Hex> => {
 const authorizationMessage = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
     `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`
 
+const api = axios.create({
+    baseURL: GATEWAY.BASE_URL,
+})
+
 async function authorizedFetch(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, operation: 'upload' | 'download', blobId: string, path: '' | '/upload' | '/download', init: RequestInit = {}) {
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage(operation, blobId, nonce) })
@@ -68,33 +73,33 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
 
     const nonce = crypto.randomUUID()
     const signature = await walletClient.signMessage({ account: address, message: authorizationMessage('upload', blobId.toString(), nonce) })
-    const headers = new Headers()
-    headers.set('x-mblob-address', address)
-    headers.set('x-mblob-signature', signature)
-    headers.set('x-mblob-nonce', nonce)
-    headers.set('x-create-tx-hash', createTxHash)
-    headers.set('x-file-name', encodeURIComponent(file.name))
 
     // Keep using the bytes captured before wallet signing. Some mobile browsers/wallets
     // can lose access to the original File handle after the transaction/signature flow.
-    const uploadBody = new FormData()
-    uploadBody.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
-    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId.toString()}/upload`, { method: 'POST', body: uploadBody, headers })
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Upload failed')
-    const uploaded = await response.json() as { publicId: string; transactionHash: string | null }
+    const formData = new FormData()
+    formData.set('file', new Blob([fileBytes], { type: file.type || 'application/octet-stream' }), file.name)
+
+    const response = await api.post(`/v1/blobs/${blobId.toString()}/upload`, formData, {
+        headers: {
+            'x-mblob-address': address,
+            'x-mblob-signature': signature,
+            'x-mblob-nonce': nonce,
+            'x-create-tx-hash': createTxHash,
+            'x-file-name': encodeURIComponent(file.name),
+        },
+    })
+    const uploaded = response.data as { publicId: string; transactionHash: string | null }
     return { blobId: blobId.toString(), publicId: uploaded.publicId, transactionHash: uploaded.transactionHash }
 }
 
 export async function getBlob(blobId: string) {
-    const response = await fetch(`${GATEWAY.BASE_URL}/v1/blobs/${blobId}`)
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve blob')
-    return response.json() as Promise<BlobInfo>
+    const response = await api.get(`/v1/blobs/${encodeURIComponent(blobId)}`)
+    return response.data as BlobInfo
 }
 
 export async function getWalletBlobs(address: Address) {
-    const response = await fetch(`${GATEWAY.BASE_URL}/v1/wallets/${address}/blobs`)
-    if (!response.ok) throw new Error((await response.json().catch(() => null))?.error ?? 'Unable to retrieve wallet blobs')
-    return response.json() as Promise<{ owner: string; blobs: OwnedBlob[] }>
+    const response = await api.get(`/v1/wallets/${address}/blobs`)
+    return response.data as { owner: string; blobs: OwnedBlob[] }
 }
 
 export async function getOnChainBlobMetadata(blobId: string): Promise<OnChainBlobMetadata> {

@@ -1,9 +1,9 @@
 import { useRef, useState } from 'react'
 import { CheckIcon, CopyIcon, Cross2Icon, ExternalLinkIcon, UploadIcon } from '@radix-ui/react-icons'
-import { formatBytes } from '../lib/utils'
-import { uploadBlob } from '../lib/mblob'
-import { useWallet } from '../lib/wallet'
-import { CONTRACT } from '../lib/constants'
+import { formatBytes } from '@/lib/utils'
+import { uploadBlob } from '@/lib/mblob'
+import { useWallet } from '@/lib/wallet'
+import { CONTRACT } from '@/lib/constants'
 
 type UploadStep = 'select' | 'paying' | 'uploading' | 'done' | 'error'
 
