@@ -1,1 +1,1 @@
-export { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob, type StoredBlob } from '@/repositories/database'
+export { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob, deleteStoredBlob, type StoredBlob } from '@/repositories/database'

@@ -1,6 +1,6 @@
 import type { Context } from 'hono'
 
-import { getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
+import { deleteBlob, getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
 import { logger } from '@/utils/logger'
 import { badRequest, errorContext } from '@/utils/errors'
 import { parseBlobId, parseBlobReference, parseUploadContentType, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
@@ -59,4 +59,9 @@ export async function downloadBlobController(c: Context) {
   c.header('content-disposition', `attachment; filename="mblob-${blobId}"`)
   const body = plaintext.buffer.slice(plaintext.byteOffset, plaintext.byteOffset + plaintext.byteLength) as ArrayBuffer
   return new Response(body, { headers: c.res.headers })
+}
+
+export async function deleteBlobController(c: Context) {
+  const reference = parseBlobReference(c.req.param('blobId'))
+  return c.json(await deleteBlob({ reference, headers: c.req.raw.headers }))
 }

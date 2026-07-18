@@ -2,12 +2,12 @@ import { isAddress, verifyMessage, type Address, type Hex } from 'viem'
 
 import { reserveNonce } from '@/repositories/database'
 
-const messageFor = (operation: 'upload' | 'download', blobId: string, nonce: string) =>
+const messageFor = (operation: 'upload' | 'download' | 'delete', blobId: string, nonce: string) =>
   `Mblob ${operation} authorization\nBlob ID: ${blobId}\nNonce: ${nonce}`
 
 export async function verifyRequestSignature(
   headers: Headers,
-  operation: 'upload' | 'download',
+  operation: 'upload' | 'download' | 'delete',
   blobId: string
 ): Promise<Address> {
   const address = headers.get('x-mblob-address')

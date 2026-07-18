@@ -145,3 +145,7 @@ export async function getStoredBlobByPublicId(publicId: string): Promise<StoredB
   if (!row) return undefined
   return { blobId: row.blob_id, publicId: row.public_id, owner: row.owner, fileHash: row.file_hash, wrappedDataKey: row.wrapped_data_key, contentType: row.content_type, contentLength: row.content_length, nodeUrls: row.node_urls, createTxHash: row.create_tx_hash, activateTxHash: row.activate_tx_hash }
 }
+
+export async function deleteStoredBlob(blobId: string) {
+  await sql`DELETE FROM stored_blobs WHERE blob_id = ${blobId}`
+}

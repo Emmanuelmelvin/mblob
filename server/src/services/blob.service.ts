@@ -1,11 +1,11 @@
 import { randomUUID } from 'node:crypto'
 
 import { config } from '@/utils/config'
-import { getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '@/repositories/blob.repository'
+import { deleteStoredBlob, getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '@/repositories/blob.repository'
 import { verifyRequestSignature } from '@/services/auth.service'
 import { activateBlob, assertBlobOwner, getChainBlob } from '@/services/chain.service'
 import { decryptFromStorage, encryptForStorage, fileContentHashes, matchesFileHash } from '@/services/crypto.service'
-import { replicate, retrieve } from '@/services/storage.service'
+import { deleteReplicas, replicate, retrieve } from '@/services/storage.service'
 import { notFound } from '@/utils/errors'
 
 export async function resolveBlobReference(reference: string) {
@@ -102,4 +102,21 @@ export async function downloadBlob(input: { reference: string; headers: Headers 
   }
 
   return { blobId, plaintext, contentType: stored.contentType }
+}
+
+export async function deleteBlob(input: { reference: string; headers: Headers }) {
+  const owner = await verifyRequestSignature(input.headers, 'delete', input.reference)
+  const blobId = await resolveBlobReference(input.reference)
+  await assertBlobOwner(BigInt(blobId), owner, 1)
+  const stored = await getStoredBlob(blobId)
+  if (!stored) throw notFound('Blob has not been uploaded to storage')
+
+  await deleteReplicas(blobId, stored.nodeUrls)
+  await deleteStoredBlob(blobId)
+
+  // TODO: Perform the mathematical computation that determines how much MON
+  // should be sent back to the user based on how long the data lived on
+  // storage nodes, replica count, file size, and other refund factors.
+  // Refund transfers are not implemented yet.
+  return { blobId, status: 'deleted' }
 }
