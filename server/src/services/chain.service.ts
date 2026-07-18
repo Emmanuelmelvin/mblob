@@ -12,12 +12,22 @@ import {
 import { privateKeyToAccount } from 'viem/accounts'
 
 import { mblobRegistryAbi } from '@/abi/mblob-registry'
+import { errorContext } from '@/utils/errors'
 import { config } from '@/utils/config'
+import { logger } from '@/utils/logger'
 
 type ChainBlob = {
   owner: Address
   fileHash: Hex
+  encryptionMetadataHash: Hex
+  storageNodesCommitment: Hex
+  fileSizeBytes: bigint
+  createdAt: bigint
+  expiresAt: bigint
+  replicationFactor: number
+  deletable: boolean
   status: number
+  payment: bigint
 }
 
 const transport = http(config.MONAD_RPC_URL)
@@ -34,13 +44,43 @@ export const publicClient: PublicClient<typeof transport, typeof monadTestnet> =
 export const walletClient: WalletClient<typeof transport, typeof monadTestnet, typeof account> = createWalletClient({ account, chain: monadTestnet, transport })
 
 export async function getChainBlob(blobId: bigint): Promise<ChainBlob> {
-  const blob = await publicClient.readContract({
-    address: config.MBLOB_REGISTRY_ADDRESS,
-    abi: mblobRegistryAbi,
-    functionName: 'getBlob',
-    args: [blobId]
-  })
-  return blob as unknown as ChainBlob
+  try {
+    const blob = await publicClient.readContract({
+      address: config.MBLOB_REGISTRY_ADDRESS,
+      abi: mblobRegistryAbi,
+      functionName: 'getBlob',
+      args: [blobId]
+    }) as unknown as ChainBlob
+
+    logger.info({
+      blobId: blobId.toString(),
+      registryAddress: config.MBLOB_REGISTRY_ADDRESS,
+      rpcUrl: config.MONAD_RPC_URL,
+      chainBlob: {
+        owner: blob.owner,
+        fileHash: blob.fileHash,
+        encryptionMetadataHash: blob.encryptionMetadataHash,
+        storageNodesCommitment: blob.storageNodesCommitment,
+        fileSizeBytes: blob.fileSizeBytes.toString(),
+        createdAt: blob.createdAt.toString(),
+        expiresAt: blob.expiresAt.toString(),
+        replicationFactor: blob.replicationFactor,
+        deletable: blob.deletable,
+        status: blob.status,
+        payment: blob.payment.toString()
+      }
+    }, 'Fetched blob from registry contract')
+
+    return blob
+  } catch (error) {
+    logger.error({
+      ...errorContext(error),
+      blobId: blobId.toString(),
+      registryAddress: config.MBLOB_REGISTRY_ADDRESS,
+      rpcUrl: config.MONAD_RPC_URL
+    }, 'Failed to fetch blob from registry contract')
+    throw error
+  }
 }
 
 export async function assertBlobOwner(blobId: bigint, address: string, expectedStatus?: number) {
