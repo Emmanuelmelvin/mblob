@@ -1,14 +1,13 @@
 import type { Context } from 'hono'
 
 import { getBlob, downloadBlob, uploadBlob } from '@/services/blob.service'
-import { badRequest } from '@/utils/errors'
 import { logger } from '@/utils/logger'
 import { parseBlobId, parseBlobReference, parseUploadFile, parseUploadFormFile } from '@/validators/blob.validators'
 
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
-  const form = await c.req.formData()
-  const file = parseUploadFile(parseUploadFormFile(form.get('file')))
+  const body = await c.req.parseBody()
+  const file = parseUploadFile(parseUploadFormFile(body['file'] as any))
   const result = await uploadBlob({
     blobId,
     headers: c.req.raw.headers,
