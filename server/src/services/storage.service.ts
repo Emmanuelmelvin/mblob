@@ -23,8 +23,8 @@ export async function replicate(blobId: string, ciphertext: Buffer) {
   )
 
   // This commits to the ciphertext and exact node order without exposing that data on-chain.
-  const commitmentInput = Buffer.from(JSON.stringify({ blobId, nodes: outcomes, ciphertextHash: sha256Hex(ciphertext) }))
-  return { nodeUrls: outcomes, commitment: sha256Hex(commitmentInput) }
+  const commitmentInput = Buffer.from(JSON.stringify({ blobId, nodes: outcomes, ciphertextHash: await sha256Hex(ciphertext) }))
+  return { nodeUrls: outcomes, commitment: await sha256Hex(commitmentInput) }
 }
 
 export async function retrieve(blobId: string, nodeUrls: string[]) {
