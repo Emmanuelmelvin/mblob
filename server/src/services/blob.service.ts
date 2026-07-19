@@ -7,6 +7,7 @@ import { activateBlob, assertBlobOwner, getChainBlob } from '@/services/chain.se
 import { decryptFromStorage, encryptForStorage, matchFileHash } from '@/services/crypto.service'
 import { deleteReplicas, replicate, retrieve } from '@/services/storage.service'
 import { notFound } from '@/utils/errors'
+import { logger } from '@/utils/logger'
 
 export async function resolveBlobReference(reference: string) {
   // Public IDs are shareable aliases; numeric IDs can be used directly on-chain.
@@ -28,6 +29,12 @@ export async function uploadBlob(
   const plaintext = Buffer.from(await input.file.arrayBuffer())
   // Verify that the uploaded file matches the on-chain hash before storing it.
   if (!await matchFileHash(plaintext, chainBlob.fileHash)) {
+    logger.warn({ 
+      blobId: input.blobId, 
+      owner, 
+      expectedHash: chainBlob.fileHash,
+      actualHash: await crypto.subtle.digest('SHA-256', plaintext)
+    }, 'Uploaded file hash does not match on-chain blob record hash')
     throw new Error(`The uploaded file hash does not match the on-chain blob record hash. Expected ${chainBlob.fileHash}.`)
   }
   // Store only encrypted bytes on storage nodes; the wrapped data key stays in metadata.
