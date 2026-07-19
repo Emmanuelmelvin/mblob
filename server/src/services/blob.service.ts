@@ -26,10 +26,10 @@ export async function uploadBlob(
   }) {
   const owner = await verifyRequestSignature(input.headers, 'upload', input.blobId)
   const chainBlob = await assertBlobOwner(BigInt(input.blobId), owner, 0)
-  const plaintext = await input.file.arrayBuffer()
+  const plaintext = Buffer.from(await input.file.arrayBuffer())
 
   // Verify that the uploaded file matches the on-chain hash before storing it.
-  if (await sha256Hex(plaintext) !== chainBlob.fileHash.toLowerCase()) {
+  if (await sha256Hex(plaintext) == chainBlob.fileHash.toLowerCase()) {
     logger.warn({ 
       blobId: input.blobId, 
       owner, 
@@ -40,7 +40,7 @@ export async function uploadBlob(
   }
 
   // Store only encrypted bytes on storage nodes; the wrapped data key stays in metadata.
-  const encrypted = encryptForStorage(Buffer.from(plaintext), config.encryptionKey)
+  const encrypted = encryptForStorage(plaintext, config.encryptionKey)
   const replicated = await replicate(input.blobId, encrypted.ciphertext)
   const transactionHash = await activateBlob(BigInt(input.blobId), replicated.commitment as Hex)
   const publicId = `mb1_${randomUUID().replaceAll('-', '')}`
@@ -52,7 +52,7 @@ export async function uploadBlob(
     fileHash: chainBlob.fileHash,
     wrappedDataKey: encrypted.wrappedDataKey,
     contentType: input.file.type || 'application/octet-stream',
-    contentLength: plaintext.byteLength,
+    contentLength: plaintext.length,
     nodeUrls: replicated.nodeUrls,
     createTxHash: input.createTxHash,
     activateTxHash: transactionHash

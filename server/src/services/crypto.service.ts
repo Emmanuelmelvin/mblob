@@ -3,7 +3,7 @@ import type { Hex } from 'viem'
 const IV_LENGTH = 12 
 const AUTH_TAG_LENGTH = 16
 
-export async function sha256Hex(bytes: Buffer | ArrayBuffer): Promise<string> {
+export async function sha256Hex(bytes: Buffer): Promise<string> {
     const digest = await crypto.subtle.digest('SHA-256', bytes)
     return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
 }
