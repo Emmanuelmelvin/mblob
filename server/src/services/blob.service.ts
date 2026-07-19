@@ -26,7 +26,7 @@ export async function uploadBlob(
   }) {
   const owner = await verifyRequestSignature(input.headers, 'upload', input.blobId)
   const chainBlob = await assertBlobOwner(BigInt(input.blobId), owner, 0)
-  const plaintext = Buffer.from(await input.file.arrayBuffer())
+  const plaintext = await input.file.arrayBuffer()
 
   // Verify that the uploaded file matches the on-chain hash before storing it.
   if (await sha256Hex(plaintext) !== chainBlob.fileHash.toLowerCase()) {
@@ -36,7 +36,7 @@ export async function uploadBlob(
       expectedHash: chainBlob.fileHash,
       actualHash: await crypto.subtle.digest('SHA-256', plaintext)
     }, 'Uploaded file hash does not match on-chain blob record hash')
-    throw new Error(`The uploaded file hash does not match the on-chain blob record hash. Expected ${chainBlob.fileHash}.`)
+    throw new Error(`The uploaded file hash does not match the on-chain blob record hash.`)
   }
 
   // Store only encrypted bytes on storage nodes; the wrapped data key stays in metadata.
