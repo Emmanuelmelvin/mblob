@@ -1,5 +1,5 @@
 import { randomUUID } from 'node:crypto'
-
+import type { Hex } from 'viem'
 import { config } from '@/utils/config'
 import { deleteStoredBlob, getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '@/repositories/blob.repository'
 import { verifyRequestSignature } from '@/services/auth.service'
@@ -38,11 +38,11 @@ export async function uploadBlob(
     }, 'Uploaded file hash does not match on-chain blob record hash')
     throw new Error(`The uploaded file hash does not match the on-chain blob record hash. Expected ${chainBlob.fileHash}.`)
   }
-  
+
   // Store only encrypted bytes on storage nodes; the wrapped data key stays in metadata.
   const encrypted = encryptForStorage(plaintext, config.encryptionKey)
   const replicated = await replicate(input.blobId, encrypted.ciphertext)
-  const transactionHash = await activateBlob(BigInt(input.blobId), replicated.commitment)
+  const transactionHash = await activateBlob(BigInt(input.blobId), replicated.commitment as Hex)
   const publicId = `mb1_${randomUUID().replaceAll('-', '')}`
 
   await saveBlob({
