@@ -1,31 +1,12 @@
-import { createCipheriv, createDecipheriv, createHash, randomBytes } from 'node:crypto'
-import { keccak256, toHex } from 'viem'
-
+import { createCipheriv, createDecipheriv, randomBytes } from 'node:crypto'
+import type { Hex } from 'viem'
 const IV_LENGTH = 12
 const AUTH_TAG_LENGTH = 16
 
-export function sha256Hex(input: Buffer): `0x${string}` {
-  return `0x${createHash('sha256').update(input).digest('hex')}`
-}
-
-export function keccak256Hex(input: Buffer): `0x${string}` {
-  return keccak256(toHex(input))
-}
-
-export function fileContentHashes(input: Buffer) {
-  return {
-    sha256: sha256Hex(input),
-    keccak256: keccak256Hex(input)
-  }
-}
-
-export function matchesFileHash(input: Buffer, expectedHash: string) {
-  const normalizedExpected = expectedHash.toLowerCase()
-  const hashes = fileContentHashes(input)
-
-  // SHA-256 is the canonical browser/client hash. Keccak-256 is accepted only
-  // as a compatibility fallback for blob records created with earlier clients.
-  return hashes.sha256.toLowerCase() === normalizedExpected || hashes.keccak256.toLowerCase() === normalizedExpected
+export async function matchFileHash(bytes: Buffer, expectedHash: string) {
+    const digest = await crypto.subtle.digest('SHA-256', bytes)
+    const actualHash = `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
+    return actualHash === expectedHash
 }
 
 function seal(plaintext: Buffer, key: Buffer): Buffer {
