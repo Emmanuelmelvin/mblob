@@ -3,10 +3,9 @@ import type { Hex } from 'viem'
 const IV_LENGTH = 12
 const AUTH_TAG_LENGTH = 16
 
-export async function matchFileHash(bytes: Buffer, expectedHash: string) {
+export async function sha256Hex(bytes: Buffer): Promise<string> {
     const digest = await crypto.subtle.digest('SHA-256', bytes)
-    const actualHash = `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
-    return actualHash === expectedHash
+    return `0x${[...new Uint8Array(digest)].map((byte) => byte.toString(16).padStart(2, '0')).join('')}` as Hex
 }
 
 function seal(plaintext: Buffer, key: Buffer): Buffer {

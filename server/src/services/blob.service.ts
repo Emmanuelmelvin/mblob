@@ -4,7 +4,7 @@ import { config } from '@/utils/config'
 import { deleteStoredBlob, getStoredBlob, getStoredBlobByPublicId, getStoredBlobsByOwner, saveBlob } from '@/repositories/blob.repository'
 import { verifyRequestSignature } from '@/services/auth.service'
 import { activateBlob, assertBlobOwner, getChainBlob } from '@/services/chain.service'
-import { decryptFromStorage, encryptForStorage, matchFileHash } from '@/services/crypto.service'
+import { decryptFromStorage, encryptForStorage, sha256Hex } from '@/services/crypto.service'
 import { deleteReplicas, replicate, retrieve } from '@/services/storage.service'
 import { notFound } from '@/utils/errors'
 import { logger } from '@/utils/logger'
@@ -28,7 +28,7 @@ export async function uploadBlob(
   const chainBlob = await assertBlobOwner(BigInt(input.blobId), owner, 0)
   const plaintext = Buffer.from(await input.file.arrayBuffer())
   // Verify that the uploaded file matches the on-chain hash before storing it.
-  if (!await matchFileHash(plaintext, chainBlob.fileHash)) {
+  if (sha256Hex(plaintext) !== chainBlob.fileHash.toLowerCase()) {
     logger.warn({ 
       blobId: input.blobId, 
       owner, 
@@ -108,7 +108,7 @@ export async function downloadBlob(input: { reference: string; headers: Headers 
   // Try available replicas before decrypting and re-checking the original file hash.
   const ciphertext = await retrieve(blobId, stored.nodeUrls)
   const plaintext = decryptFromStorage(ciphertext, stored.wrappedDataKey, config.encryptionKey)
-  if (!await matchFileHash(plaintext, stored.fileHash)) {
+  if (await sha256Hex(plaintext) !== stored.fileHash.toLowerCase()) {
     throw new Error('Retrieved file integrity check failed')
   }
 
