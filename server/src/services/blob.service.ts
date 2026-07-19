@@ -29,7 +29,7 @@ export async function uploadBlob(
   const plaintext = Buffer.from(await input.file.arrayBuffer())
 
   // Verify that the uploaded file matches the on-chain hash before storing it.
-  if (await sha256Hex(plaintext) == chainBlob.fileHash.toLowerCase()) {
+  if (await sha256Hex(plaintext) !== chainBlob.fileHash.toLowerCase()) {
     logger.warn({ 
       blobId: input.blobId, 
       owner, 

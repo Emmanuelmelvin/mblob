@@ -107,9 +107,8 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     if (chainBlob.fileHash.toLowerCase() !== fileHash.toLowerCase()) {
         throw new Error(`The created blob record hash does not match the selected file hash. Expected ${fileHash}, got ${chainBlob.fileHash}.`)
     }
-
-    const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
-
+    const body = new FormData();
+    form.append("file", new Blob([fileBytes], { type: file.type }))
     const response = await authorizedFetch(
         walletClient, 
         address, 
@@ -117,7 +116,7 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
         blobId.toString(),
         '/upload', {
         method: 'POST',
-        body: uploadBody,
+        body,
         headers: {
             'x-create-tx-hash': createTxHash,
             'x-file-hash': fileHash,
