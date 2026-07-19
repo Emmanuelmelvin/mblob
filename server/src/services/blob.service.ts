@@ -40,7 +40,7 @@ export async function uploadBlob(
   }
 
   // Store only encrypted bytes on storage nodes; the wrapped data key stays in metadata.
-  const encrypted = encryptForStorage(plaintext, config.encryptionKey)
+  const encrypted = encryptForStorage(Buffer.from(plaintext), config.encryptionKey)
   const replicated = await replicate(input.blobId, encrypted.ciphertext)
   const transactionHash = await activateBlob(BigInt(input.blobId), replicated.commitment as Hex)
   const publicId = `mb1_${randomUUID().replaceAll('-', '')}`
@@ -52,7 +52,7 @@ export async function uploadBlob(
     fileHash: chainBlob.fileHash,
     wrappedDataKey: encrypted.wrappedDataKey,
     contentType: input.file.type || 'application/octet-stream',
-    contentLength: plaintext.length,
+    contentLength: plaintext.byteLength,
     nodeUrls: replicated.nodeUrls,
     createTxHash: input.createTxHash,
     activateTxHash: transactionHash
