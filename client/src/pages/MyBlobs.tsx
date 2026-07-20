@@ -107,7 +107,7 @@ export function MyBlobs() {
                         <Info label="Status" value={blob.status === 1 ? 'Active' : blob.status === 2 ? 'Deleted' : 'Pending'} />
                         <Info label="Stored" value={blob.stored ? 'Yes' : 'No'} />
                         <Info label="File hash" value={blob.fileHash} />
-                        <Info label="Content" value={`${blob.contentType} · ${formatBytes(blob.contentLength)}`} />
+                        <Info label="Content" value={`${blob.fileName} · ${blob.contentType} · ${formatBytes(blob.contentLength)}`} />
                         <Info label="Replicated node URLs" value={blob.nodeUrls.join(', ')} />
                         <Info label="Create tx hash" value={blob.createTxHash ?? 'Not recorded'} />
                         <Info label="Activate tx hash" value={blob.activateTxHash ?? 'Not recorded'} />

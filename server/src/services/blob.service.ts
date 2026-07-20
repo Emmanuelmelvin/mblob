@@ -34,11 +34,9 @@ export async function uploadBlob(
       blobId: input.blobId, 
       owner, 
       expectedHash: chainBlob.fileHash,
-      actualHash: await crypto.subtle.digest('SHA-256', plaintext)
+      actualHash: await sha256Hex(plaintext)
     }, 'Uploaded file hash does not match on-chain blob record hash')
-    //throw new Error(`The uploaded file hash does not match the on-chain blob record hash.`)
-    //This should throw an error if the onchain hash and dosen't match the recieved file hash
-    //For some reasons it dosent, still debugging...
+    throw new Error('The uploaded file hash does not match the on-chain blob record hash.')
   }
 
   // Store only encrypted bytes on storage nodes; the wrapped data key stays in metadata.
@@ -54,6 +52,7 @@ export async function uploadBlob(
     fileHash: chainBlob.fileHash,
     wrappedDataKey: encrypted.wrappedDataKey,
     contentType: input.file.type || 'application/octet-stream',
+    fileName: input.file.name || `mblob-${input.blobId}`,
     contentLength: plaintext.length,
     nodeUrls: replicated.nodeUrls,
     createTxHash: input.createTxHash,
@@ -92,6 +91,7 @@ export async function getWalletBlobs(owner: string) {
       fileHash: chainBlob.fileHash,
       stored: true,
       contentType: stored.contentType,
+      fileName: stored.fileName,
       contentLength: stored.contentLength,
       nodeUrls: stored.nodeUrls,
       createTxHash: stored.createTxHash,
@@ -113,11 +113,10 @@ export async function downloadBlob(input: { reference: string; headers: Headers 
   const ciphertext = await retrieve(blobId, stored.nodeUrls)
   const plaintext = decryptFromStorage(ciphertext, stored.wrappedDataKey, config.encryptionKey)
   if (await sha256Hex(plaintext) !== stored.fileHash) {
-    //throw new Error('Retrieved file integrity check failed')
-    //This also should throw an error but still debugging...
+    throw new Error('Retrieved file integrity check failed')
   }
 
-  return { blobId, plaintext, contentType: stored.contentType }
+  return { blobId, plaintext, contentType: stored.contentType, fileName: stored.fileName }
 }
 
 export async function deleteBlob(input: { reference: string; headers: Headers }) {

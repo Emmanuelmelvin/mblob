@@ -20,7 +20,7 @@ export const publicClient = createPublicClient({ chain: monadTestnet, transport:
 
 
 export type BlobInfo = { blobId: string; publicId: string | null; owner: string; fileHash: string; status: number; stored: boolean; createTxHash: string | null; activateTxHash: string | null }
-export type OwnedBlob = BlobInfo & { contentType: string; contentLength: number; nodeUrls: string[] }
+export type OwnedBlob = BlobInfo & { contentType: string; fileName: string; contentLength: number; nodeUrls: string[] }
 export type OnChainBlobMetadata = {
     owner: string
     fileHash: string
@@ -107,8 +107,7 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
     if (chainBlob.fileHash.toLowerCase() !== fileHash.toLowerCase()) {
         throw new Error(`The created blob record hash does not match the selected file hash. Expected ${fileHash}, got ${chainBlob.fileHash}.`)
     }
-    const body = new FormData();
-    body.append("file", new Blob([fileBytes], { type: file.type }))
+    const uploadBody = new Blob([fileBytes], { type: file.type || 'application/octet-stream' })
     const response = await authorizedFetch(
         walletClient, 
         address, 
@@ -116,12 +115,12 @@ export async function uploadBlob(walletClient: NonNullable<ReturnType<typeof imp
         blobId.toString(),
         '/upload', {
         method: 'POST',
-        body,
+        body: uploadBody,
         headers: {
             'x-create-tx-hash': createTxHash,
             'x-file-hash': fileHash,
             'x-file-name': encodeURIComponent(file.name),
-            'content-type': file.type,
+            'content-type': uploadBody.type,
         },
     })
     if (!response.ok) throw new Error(await responseErrorMessage(response, 'Upload failed'))
@@ -181,6 +180,20 @@ export async function deleteBlob(walletClient: NonNullable<ReturnType<typeof imp
     return response.json() as Promise<{ blobId: string; status: string }>
 }
 
+function downloadFileName(response: Response, fallback: string) {
+    const disposition = response.headers.get('content-disposition')
+    const encoded = disposition?.match(/filename\*=UTF-8''([^;]+)/i)?.[1]
+    if (encoded) {
+        try {
+            return decodeURIComponent(encoded)
+        } catch {
+            // Fall back to the plain filename below.
+        }
+    }
+    const plain = disposition?.match(/filename="?([^";]+)"?/i)?.[1]
+    return plain || fallback
+}
+
 export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof import('viem').createWalletClient>>, address: Address, blobId: string) {
     const response = await authorizedFetch(walletClient, address, 'download', blobId, '/download')
     if (!response.ok) throw new Error(await responseErrorMessage(response, 'Download failed'))
@@ -188,7 +201,7 @@ export async function downloadBlob(walletClient: NonNullable<ReturnType<typeof i
     const url = URL.createObjectURL(file)
     const link = document.createElement('a')
     link.href = url
-    link.download = `mblob-${blobId}`
+    link.download = downloadFileName(response, `mblob-${blobId}`)
     link.click()
     URL.revokeObjectURL(url)
 }
