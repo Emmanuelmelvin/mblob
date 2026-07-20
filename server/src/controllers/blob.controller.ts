@@ -25,6 +25,11 @@ function decodeFileName(fileName: string) {
   }
 }
 
+function contentDispositionFileName(fileName: string) {
+  const fallback = fileName.replace(/[\r\n"\\]/g, '_') || 'download.bin'
+  return `attachment; filename="${fallback}"; filename*=UTF-8''${encodeURIComponent(fileName)}`
+}
+
 export async function uploadBlobController(c: Context) {
   const blobId = parseBlobId(c.req.param('blobId'))
   const uploadContentType = parseUploadContentType(c.req.header('content-type'))
@@ -64,11 +69,11 @@ export async function getBlobController(c: Context) {
 
 export async function downloadBlobController(c: Context) {
   const reference = parseBlobReference(c.req.param('blobId'))
-  const { blobId, plaintext, contentType } = await downloadBlob({ reference, headers: c.req.raw.headers })
+  const { plaintext, contentType, fileName } = await downloadBlob({ reference, headers: c.req.raw.headers })
 
   c.header('content-type', contentType)
   c.header('content-length', String(plaintext.length))
-  c.header('content-disposition', `attachment; filename="mblob-${blobId}"`)
+  c.header('content-disposition', contentDispositionFileName(fileName))
   const body = plaintext.buffer.slice(plaintext.byteOffset, plaintext.byteOffset + plaintext.byteLength) as ArrayBuffer
   return new Response(body, { headers: c.res.headers })
 }

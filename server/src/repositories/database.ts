@@ -11,6 +11,7 @@ export type StoredBlob = {
   fileHash: string
   wrappedDataKey: string
   contentType: string
+  fileName: string
   contentLength: number
   nodeUrls: string[]
   createTxHash: string | null
@@ -26,6 +27,7 @@ export async function initializeDatabase() {
       file_hash TEXT NOT NULL,
       wrapped_data_key TEXT NOT NULL,
       content_type TEXT NOT NULL,
+      file_name TEXT NOT NULL DEFAULT 'download.bin',
       content_length INTEGER NOT NULL,
       node_urls JSONB NOT NULL,
       create_tx_hash TEXT,
@@ -38,6 +40,7 @@ export async function initializeDatabase() {
   await sql`ALTER TABLE stored_blobs ADD COLUMN IF NOT EXISTS transaction_hash TEXT`
   await sql`ALTER TABLE stored_blobs ADD COLUMN IF NOT EXISTS create_tx_hash TEXT`
   await sql`ALTER TABLE stored_blobs ADD COLUMN IF NOT EXISTS activate_tx_hash TEXT`
+  await sql`ALTER TABLE stored_blobs ADD COLUMN IF NOT EXISTS file_name TEXT NOT NULL DEFAULT 'download.bin'`
   // Older deployments stored only the activation transaction under this name.
   await sql`UPDATE stored_blobs SET activate_tx_hash = transaction_hash WHERE activate_tx_hash IS NULL AND transaction_hash IS NOT NULL`
   await sql`UPDATE stored_blobs SET public_id = 'mb1_legacy_' || blob_id WHERE public_id IS NULL`
@@ -65,10 +68,10 @@ export async function reserveNonce(nonce: string) {
 export async function saveBlob(blob: StoredBlob) {
   await sql`
     INSERT INTO stored_blobs (
-      blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, content_length, node_urls, create_tx_hash, activate_tx_hash
+      blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, file_name, content_length, node_urls, create_tx_hash, activate_tx_hash
     ) VALUES (
       ${blob.blobId}, ${blob.publicId}, ${blob.owner}, ${blob.fileHash}, ${blob.wrappedDataKey},
-      ${blob.contentType}, ${blob.contentLength}, ${sql.json(blob.nodeUrls)}, ${blob.createTxHash}, ${blob.activateTxHash}
+      ${blob.contentType}, ${blob.fileName}, ${blob.contentLength}, ${sql.json(blob.nodeUrls)}, ${blob.createTxHash}, ${blob.activateTxHash}
     )
   `
 }
@@ -81,12 +84,13 @@ export async function getStoredBlob(blobId: string): Promise<StoredBlob | undefi
     file_hash: string
     wrapped_data_key: string
     content_type: string
+    file_name: string
     content_length: number
     node_urls: string[]
     create_tx_hash: string | null
     activate_tx_hash: string | null
   }[]>`
-    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, content_length, node_urls, create_tx_hash, activate_tx_hash
+    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, file_name, content_length, node_urls, create_tx_hash, activate_tx_hash
     FROM stored_blobs WHERE blob_id = ${blobId}
   `
   const row = rows[0]
@@ -98,6 +102,7 @@ export async function getStoredBlob(blobId: string): Promise<StoredBlob | undefi
     fileHash: row.file_hash,
     wrappedDataKey: row.wrapped_data_key,
     contentType: row.content_type,
+    fileName: row.file_name,
     contentLength: row.content_length,
     nodeUrls: row.node_urls,
     createTxHash: row.create_tx_hash,
@@ -113,16 +118,17 @@ export async function getStoredBlobsByOwner(owner: string): Promise<StoredBlob[]
     file_hash: string
     wrapped_data_key: string
     content_type: string
+    file_name: string
     content_length: number
     node_urls: string[]
     create_tx_hash: string | null
     activate_tx_hash: string | null
   }[]>`
-    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, content_length, node_urls, create_tx_hash, activate_tx_hash
+    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, file_name, content_length, node_urls, create_tx_hash, activate_tx_hash
     FROM stored_blobs WHERE lower(owner) = lower(${owner})
     ORDER BY blob_id::numeric DESC
   `
-  return rows.map((row) => ({ blobId: row.blob_id, publicId: row.public_id, owner: row.owner, fileHash: row.file_hash, wrappedDataKey: row.wrapped_data_key, contentType: row.content_type, contentLength: row.content_length, nodeUrls: row.node_urls, createTxHash: row.create_tx_hash, activateTxHash: row.activate_tx_hash }))
+  return rows.map((row) => ({ blobId: row.blob_id, publicId: row.public_id, owner: row.owner, fileHash: row.file_hash, wrappedDataKey: row.wrapped_data_key, contentType: row.content_type, fileName: row.file_name, contentLength: row.content_length, nodeUrls: row.node_urls, createTxHash: row.create_tx_hash, activateTxHash: row.activate_tx_hash }))
 }
 
 export async function getStoredBlobByPublicId(publicId: string): Promise<StoredBlob | undefined> {
@@ -133,17 +139,18 @@ export async function getStoredBlobByPublicId(publicId: string): Promise<StoredB
     file_hash: string
     wrapped_data_key: string
     content_type: string
+    file_name: string
     content_length: number
     node_urls: string[]
     create_tx_hash: string | null
     activate_tx_hash: string | null
   }[]>`
-    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, content_length, node_urls, create_tx_hash, activate_tx_hash
+    SELECT blob_id, public_id, owner, file_hash, wrapped_data_key, content_type, file_name, content_length, node_urls, create_tx_hash, activate_tx_hash
     FROM stored_blobs WHERE public_id = ${publicId}
   `
   const row = rows[0]
   if (!row) return undefined
-  return { blobId: row.blob_id, publicId: row.public_id, owner: row.owner, fileHash: row.file_hash, wrappedDataKey: row.wrapped_data_key, contentType: row.content_type, contentLength: row.content_length, nodeUrls: row.node_urls, createTxHash: row.create_tx_hash, activateTxHash: row.activate_tx_hash }
+  return { blobId: row.blob_id, publicId: row.public_id, owner: row.owner, fileHash: row.file_hash, wrappedDataKey: row.wrapped_data_key, contentType: row.content_type, fileName: row.file_name, contentLength: row.content_length, nodeUrls: row.node_urls, createTxHash: row.create_tx_hash, activateTxHash: row.activate_tx_hash }
 }
 
 export async function deleteStoredBlob(blobId: string) {
